@@ -73,11 +73,11 @@ export default async function SearchPage({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[0.72rem] font-bold text-primary">
-                    {names[tool.category] ?? categoryById(tool.category)?.name}
-                    {subcategoryName(tool.category, tool.subcategory) ? ` · ${subcategoryName(tool.category, tool.subcategory)}` : ""}
+                    {names[tool.categoryId] ?? categoryById(tool.categoryId)?.name}
+                    {subcategoryName(tool.categoryId, tool.subcategoryId) ? ` · ${subcategoryName(tool.categoryId, tool.subcategoryId)}` : ""}
                   </span>
-                  <span className="block font-bold text-ink">{tool.title}</span>
-                  <span className="block text-[0.86rem] leading-relaxed text-muted">{tool.description}</span>
+                  <span className="block font-bold text-ink">{tool.title.ar}</span>
+                  <span className="block text-[0.86rem] leading-relaxed text-muted">{tool.description.ar}</span>
                 </span>
                 <span className="hidden shrink-0 rounded-full bg-surface2 px-2.5 py-0.5 text-[0.72rem] text-muted sm:block">
                   {reason}

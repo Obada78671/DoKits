@@ -39,7 +39,7 @@ export default async function CategoriesAdminPage({
         {rows.map((c, i) => {
           const def = CATEGORIES.find((d) => d.id === c.slug);
           const subs = def?.subcategories
-            .map((s) => ({ ...s, n: live.filter((t) => t.category === c.slug && t.subcategory === s.id).length }))
+            .map((s) => ({ ...s, n: live.filter((t) => t.categoryId === c.slug && t.subcategoryId === s.id).length }))
             .filter((s) => s.n > 0) ?? [];
           return (
             <div key={c.id} className="flex flex-col gap-2 p-4">

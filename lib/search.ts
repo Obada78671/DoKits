@@ -19,6 +19,39 @@ export function normalizeAr(s: string): string {
     .trim();
 }
 
+/**
+ * مرادفاتُ الأعمال: يبحث الناسُ بكلماتٍ لا تَرِد في أسماء الأدوات.
+ * كلُّ مجموعةٍ متكافئة — أيُّ كلمةٍ فيها تجد أخواتِها.
+ */
+const SYNONYM_GROUPS: string[][] = [
+  ["ضريبة", "vat", "قيمه مضافه", "ضريبه", "ضريبة القيمة المضافة", "tax"],
+  ["تفقيط", "كتابه المبلغ", "المبلغ بالحروف", "تفقيط الشيك"],
+  ["هامش", "ربح", "margin", "markup", "ترميز"],
+  ["فاتوره", "invoice", "بيل", "وصل"],
+  ["قرض", "تمويل", "قسط", "loan", "installment"],
+  ["هجري", "اسلامي", "قمري", "hijri"],
+  ["ميلادي", "افرنجي", "gregorian"],
+  ["ايبان", "iban", "رقم حساب", "حساب بنكي"],
+  ["تشكيل", "حركات", "تشكيل النص", "diacritics"],
+  ["كلمه سر", "باسورد", "password", "كلمة مرور"],
+  ["json", "جيسون"],
+  ["لون", "الوان", "color", "hex", "rgb"],
+  ["وحدات", "تحويل وحدات", "قياسات", "units"],
+  ["زكاه", "نصاب", "zakat"],
+  ["راتب", "اجر", "دوام", "ساعات عمل", "payroll"],
+];
+
+const SYNONYMS = new Map<string, string[]>();
+for (const g of SYNONYM_GROUPS) {
+  const norm = g.map(normalizeAr);
+  for (const w of norm) SYNONYMS.set(w, norm);
+}
+
+/** يوسّع كلمةً أو عبارةً إلى مرادفاتها المتكافئة */
+export function expandTerm(term: string): string[] {
+  return SYNONYMS.get(term) ?? [term];
+}
+
 export type SearchContext = {
   /** عددُ الزيارات لكلّ أداة — يرجّح الشائع عند تساوي التطابق */
   popularity?: Record<string, number>;
@@ -29,12 +62,12 @@ export type SearchHit<T extends ToolSummary = ToolSummary> = { tool: T; score: n
 
 /** الترجيح: الاسمُ أوّلاً، ثمّ الكلماتُ المفتاحيّة، ثمّ الوصف، ثمّ التصنيف */
 function scoreTool(t: ToolSummary, q: string): { score: number; reason: string } {
-  const title = normalizeAr(t.title);
-  const titleEn = normalizeAr(t.titleEn);
-  const desc = normalizeAr(t.description);
-  const kws = [...t.keywords, ...(t.keywordsEn ?? [])].map(normalizeAr);
-  const cat = normalizeAr(categoryById(t.category)?.name ?? "");
-  const sub = normalizeAr(subcategoryName(t.category, t.subcategory) ?? "");
+  const title = normalizeAr(t.title.ar);
+  const titleEn = normalizeAr(t.title.en);
+  const desc = normalizeAr(t.description.ar);
+  const kws = [...t.keywords, ...t.keywordsEn, ...t.tags].map(normalizeAr);
+  const cat = normalizeAr(categoryById(t.categoryId)?.name ?? "");
+  const sub = normalizeAr(subcategoryName(t.categoryId, t.subcategoryId) ?? "");
 
   if (title === q || titleEn === q) return { score: 120, reason: "مطابقةُ الاسم" };
   if (title.startsWith(q) || titleEn.startsWith(q)) return { score: 90, reason: "بدايةُ الاسم" };
@@ -57,7 +90,28 @@ export function searchTools<T extends ToolSummary>(
   if (!q) {
     return live.map((t) => ({ tool: t, score: 0, reason: "" }));
   }
-  // كلُّ كلمةٍ في الاستعلام يجب أن تجد موضعاً — بحثٌ تقاطعيٌّ لا اتّحاديّ
+  // الاستعلامُ كلُّه قد يكون عبارةً مرادفة («المبلغ بالحروف») — تُجرَّب قبل التقسيم
+  const wholeVariants = SYNONYMS.get(q);
+  if (wholeVariants) {
+    const phraseHits: SearchHit<T>[] = [];
+    for (const t of live) {
+      let best = { score: 0, reason: "" };
+      for (const v of wholeVariants) {
+        const r = scoreTool(t, v);
+        if (r.score > best.score) best = r;
+      }
+      if (best.score === 0) continue;
+      let total = best.score;
+      if (ctx.favorites?.has(t.slug)) total += 25;
+      total += Math.min(15, Math.log10(1 + (ctx.popularity?.[t.slug] ?? 0)) * 6);
+      phraseHits.push({ tool: t, score: total, reason: best.reason });
+    }
+    if (phraseHits.length > 0) {
+      return phraseHits.sort((a, b) => b.score - a.score || a.tool.title.ar.localeCompare(b.tool.title.ar, "ar"));
+    }
+  }
+
+  // وإلّا فكلُّ كلمةٍ يجب أن تجد موضعاً — بحثٌ تقاطعيٌّ لا اتّحاديّ
   const terms = q.split(" ").filter(Boolean);
   const hits: SearchHit<T>[] = [];
   for (const t of live) {
@@ -66,17 +120,22 @@ export function searchTools<T extends ToolSummary>(
     let bestScore = 0;
     let all_matched = true;
     for (const term of terms) {
-      const { score, reason } = scoreTool(t, term);
-      if (score === 0) { all_matched = false; break; }
-      total += score;
-      if (score > bestScore) { bestScore = score; best = reason; }
+      // تكفي مطابقةُ مرادفٍ واحد — «ضريبة» تجد VAT والعكس
+      let bestForTerm = { score: 0, reason: "" };
+      for (const variant of expandTerm(term)) {
+        const r = scoreTool(t, variant);
+        if (r.score > bestForTerm.score) bestForTerm = r;
+      }
+      if (bestForTerm.score === 0) { all_matched = false; break; }
+      total += bestForTerm.score;
+      if (bestForTerm.score > bestScore) { bestScore = bestForTerm.score; best = bestForTerm.reason; }
     }
     if (!all_matched) continue;
     if (ctx.favorites?.has(t.slug)) total += 25;
     total += Math.min(15, Math.log10(1 + (ctx.popularity?.[t.slug] ?? 0)) * 6);
     hits.push({ tool: t, score: total, reason: best });
   }
-  return hits.sort((a, b) => b.score - a.score || a.tool.title.localeCompare(b.tool.title, "ar"));
+  return hits.sort((a, b) => b.score - a.score || a.tool.title.ar.localeCompare(b.tool.title.ar, "ar"));
 }
 
 /** ترتيبُ العرض بلا استعلام: المفضّلةُ ثمّ الشائعُ ثمّ ترتيبُ السجلّ */

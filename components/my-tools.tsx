@@ -17,9 +17,9 @@ type Props = {
 };
 
 const card = (t: ToolSummary, names: Record<string, string>, fav: boolean): CardTool => ({
-  slug: t.slug, title: t.title, description: t.description, icon: t.icon,
-  categoryName: names[t.category] ?? categoryById(t.category)?.name ?? t.category,
-  subName: subcategoryName(t.category, t.subcategory),
+  slug: t.slug, title: t.title.ar, description: t.description.ar, icon: t.icon,
+  categoryName: names[t.categoryId] ?? categoryById(t.categoryId)?.name ?? t.categoryId,
+  subName: subcategoryName(t.categoryId, t.subcategoryId),
   fav,
 });
 
@@ -99,7 +99,7 @@ export function MyTools({ tools, categoryNames, serverFavorites, serverRecent, l
           <ul className="card divide-y divide-line">
             {recentTools.map(({ t, at }) => (
               <li key={t!.slug} className="flex items-center gap-3 px-4 py-2.5">
-                <Link href={`/tools/${t!.slug}`} className="font-medium text-ink hover:text-primary">{t!.title}</Link>
+                <Link href={`/tools/${t!.slug}`} className="font-medium text-ink hover:text-primary">{t!.title.ar}</Link>
                 <span className="ms-auto text-[0.82rem] text-muted">{when(at)}</span>
               </li>
             ))}

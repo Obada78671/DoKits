@@ -39,8 +39,8 @@ export function useToolActions(actions: ToolActions, deps: unknown[] = []) {
 }
 
 function ActionBar({
-  actions, toolTitle, onReset, printable,
-}: { actions: ToolActions; toolTitle: string; onReset: () => void; printable: boolean }) {
+  actions, toolTitle, onReset, printable, shareable,
+}: { actions: ToolActions; toolTitle: string; onReset: () => void; printable: boolean; shareable: boolean }) {
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -92,7 +92,9 @@ function ActionBar({
       {actions.getDownload && (
         <button className="btn btn-ghost !py-1.5" onClick={download}>تنزيل</button>
       )}
-      <button className="btn btn-ghost !py-1.5" onClick={share}>{shared ? "نُسخ الرابط ✓" : "مشاركة"}</button>
+      {shareable && (
+        <button className="btn btn-ghost !py-1.5" onClick={share}>{shared ? "نُسخ الرابط ✓" : "مشاركة"}</button>
+      )}
     </div>
   );
 }
@@ -117,9 +119,18 @@ class ToolErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   }
 }
 
+export type FrameCapabilities = {
+  copyResult: boolean; print: boolean; exportPdf: boolean; exportCsv: boolean;
+  saveDraft: boolean; share: boolean; offline: boolean;
+};
+
 export function ToolFrame({
-  slug, title, instructions, printable = false, children,
-}: { slug: string; title: string; instructions?: string; printable?: boolean; children: ReactNode }) {
+  slug, title, instructions, capabilities, children,
+}: {
+  slug: string; title: string; instructions?: string;
+  capabilities?: FrameCapabilities; children: ReactNode;
+}) {
+  const printable = capabilities?.print ?? false;
   const [actions, setActions] = useState<ToolActions>({});
   const [resetKey, setResetKey] = useState(0);
   const seen = useRef(false);
@@ -147,6 +158,7 @@ export function ToolFrame({
           actions={actions}
           toolTitle={title}
           printable={printable}
+          shareable={capabilities?.share ?? true}
           onReset={() => { setActions({}); setResetKey((k) => k + 1); }}
         />
         <ToolErrorBoundary key={resetKey}>{children}</ToolErrorBoundary>

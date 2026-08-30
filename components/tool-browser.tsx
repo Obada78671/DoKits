@@ -43,8 +43,8 @@ export function ToolBrowser({
       ? searchTools(tools, q, { popularity, favorites: favs }).map((h) => h.tool)
       : rankBrowse(tools, { popularity, favorites: favs });
     return base.filter((t) =>
-      (!cat || t.category === cat) &&
-      (!sub || t.subcategory === sub) &&
+      (!cat || t.categoryId === cat) &&
+      (!sub || t.subcategoryId === sub) &&
       (!favOnly || favs.has(t.slug)),
     );
   }, [tools, q, cat, sub, favOnly, favs, popularity]);
@@ -54,9 +54,9 @@ export function ToolBrowser({
     return CATEGORIES.map((c) => ({
       id: c.id,
       name: categoryNames[c.id] ?? c.name,
-      count: live.filter((t) => t.category === c.id).length,
+      count: live.filter((t) => t.categoryId === c.id).length,
       subs: c.subcategories
-        .map((s) => ({ ...s, count: live.filter((t) => t.category === c.id && t.subcategory === s.id).length }))
+        .map((s) => ({ ...s, count: live.filter((t) => t.categoryId === c.id && t.subcategoryId === s.id).length }))
         .filter((s) => s.count > 0),
     })).filter((c) => c.count > 0);
   }, [tools, categoryNames]);
@@ -64,9 +64,9 @@ export function ToolBrowser({
   const activeSubs = cat ? counts.find((c) => c.id === cat)?.subs ?? [] : [];
 
   const cards: CardTool[] = results.map((t) => ({
-    slug: t.slug, title: t.title, description: t.description, icon: t.icon,
-    categoryName: categoryNames[t.category] ?? categoryById(t.category)?.name ?? t.category,
-    subName: subcategoryName(t.category, t.subcategory),
+    slug: t.slug, title: t.title.ar, description: t.description.ar, icon: t.icon,
+    categoryName: categoryNames[t.categoryId] ?? categoryById(t.categoryId)?.name ?? t.categoryId,
+    subName: subcategoryName(t.categoryId, t.subcategoryId),
     fav: favs.has(t.slug),
   }));
 

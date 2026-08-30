@@ -125,8 +125,8 @@ function syncTools(d: Database.Database) {
     d.prepare("UPDATE tools SET enabled = 0").run();
     live.forEach((t, i) =>
       upsert.run({
-        slug: t.slug, title: t.title, description: t.description,
-        category: t.category, subcategory: t.subcategory ?? null,
+        slug: t.slug, title: t.title.ar, description: t.description.ar,
+        category: t.categoryId, subcategory: t.subcategoryId ?? null,
         icon: t.icon, version: t.version, sort: i,
       }),
     );

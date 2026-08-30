@@ -45,11 +45,11 @@ test("عددُ الأدوات في كلّ تصنيفٍ يُشتقّ ولا يُ�
 
 test("كلُّ تصنيفٍ فرعيٍّ يخصّ تصنيفَه", () => {
   for (const t of TOOLS) {
-    if (!t.subcategory) continue;
-    const cat = CATEGORIES.find((c) => c.id === t.category)!;
+    if (!t.subcategoryId) continue;
+    const cat = CATEGORIES.find((c) => c.id === t.categoryId)!;
     assert.ok(
-      cat.subcategories.some((s) => s.id === t.subcategory),
-      `${t.slug}: «${t.subcategory}» ليس من فرعيّات «${t.category}»`,
+      cat.subcategories.some((s) => s.id === t.subcategoryId),
+      `${t.slug}: «${t.subcategoryId}» ليس من فرعيّات «${t.categoryId}»`,
     );
   }
 });
@@ -92,10 +92,10 @@ test("الأدواتُ ذاتُ الصلة لا تتضمّن الأداةَ نف
   for (const t of live) {
     const rel = relatedTools(TOOLS, t);
     assert.ok(!rel.some((r) => r.slug === t.slug), `${t.slug}: يقترح نفسَه`);
-    const siblings = live.filter((x) => x.category === t.category && x.slug !== t.slug).length;
+    const siblings = live.filter((x) => x.categoryId === t.categoryId && x.slug !== t.slug).length;
     if (siblings > 0) {
       assert.ok(rel.length > 0, `${t.slug}: له أخواتٌ في التصنيف ومع ذلك بلا صلة`);
-      assert.ok(rel.every((r) => r.category === t.category || r.keywords.some((k) => t.keywords.includes(k))),
+      assert.ok(rel.every((r) => r.categoryId === t.categoryId || r.keywords.some((k) => t.keywords.includes(k))),
         `${t.slug}: اقتراحٌ بلا رابطِ تصنيفٍ ولا كلمة`);
     }
     // الوحيدُ في تصنيفه: الصفحةُ تعرض رابطَ تصفّحٍ بدلاً من قائمةٍ فارغة
@@ -107,16 +107,56 @@ test("لا معرّفَ مكرّرٌ ولا اسمَ مكرّر", () => {
   const titles = new Set<string>();
   for (const t of TOOLS) {
     assert.ok(!slugs.has(t.slug), `معرّفٌ مكرّر: ${t.slug}`);
-    assert.ok(!titles.has(t.title), `اسمٌ مكرّر: ${t.title}`);
+    assert.ok(!titles.has(t.title.ar), `اسمٌ مكرّر: ${t.title.ar}`);
     slugs.add(t.slug);
-    titles.add(t.title);
+    titles.add(t.title.ar);
   }
 });
 
 test("بيانات SEO كافيةٌ لكلّ أداة", () => {
   for (const t of publishedTools(TOOLS)) {
-    assert.ok(t.description.length >= 20, `${t.slug}: وصفٌ قصيرٌ جدّاً للفهرسة`);
+    assert.ok(t.description.ar.length >= 20, `${t.slug}: وصفٌ قصيرٌ جدّاً للفهرسة`);
     assert.ok(t.keywords.length >= 3, `${t.slug}: كلماتٌ مفتاحيّةٌ قليلة`);
-    assert.ok(t.titleEn !== t.slug, `${t.slug}: بلا اسمٍ إنكليزيّ`);
+    assert.ok(t.title.en !== t.slug, `${t.slug}: بلا اسمٍ إنكليزيّ`);
+  }
+});
+
+/* ————— عقدُ البيان الموسَّع ————— */
+
+test("البيانُ يستوفي العقد: مسارٌ وقدراتٌ وخصوصيّةٌ وSEO", () => {
+  for (const t of TOOLS) {
+    assert.equal(t.id, t.slug, `${t.slug}: المعرّف يخالف الرابط`);
+    assert.equal(t.route, `/tools/${t.slug}`);
+    assert.equal(t.seo.canonicalPath, t.route);
+    assert.ok(t.seo.title && t.seo.description, `${t.slug}: SEO ناقص`);
+    assert.ok(["draft", "beta", "published", "archived"].includes(t.status));
+    assert.ok(["basic", "medium", "advanced"].includes(t.complexity));
+    assert.ok(["public", "authenticated", "premium"].includes(t.visibility));
+    assert.ok(["local", "server", "hybrid"].includes(t.privacy.processing));
+    assert.equal(typeof t.capabilities.copyResult, "boolean");
+    assert.ok(t.component.length > 0, `${t.slug}: بلا اسم مكوّن`);
+  }
+});
+
+test("كلُّ الأدوات تحسب محلّيّاً ولا تحفظ مدخلاتِ المستخدم", () => {
+  for (const t of TOOLS) {
+    assert.equal(t.privacy.processing, "local", `${t.slug}: يزعم حساباً على الخادم`);
+    assert.equal(t.privacy.storesUserData, false, `${t.slug}: يزعم حفظَ بيانات`);
+  }
+});
+
+test("المرادفاتُ تصل بين ما يكتبه الناسُ وما نسمّيه", () => {
+  assert.equal(searchTools(TOOLS, "VAT")[0]?.tool.slug, "vat");
+  assert.equal(searchTools(TOOLS, "قيمة مضافة")[0]?.tool.slug, "vat");
+  assert.equal(searchTools(TOOLS, "المبلغ بالحروف")[0]?.tool.slug, "number-to-words");
+  assert.equal(searchTools(TOOLS, "باسورد").length, 0, "لا أداةَ كلمات مرور بعد — المرادفُ لا يخترع نتيجة");
+});
+
+test("الروابطُ القديمة لم تنكسر: كلُّ أداةٍ ما تزال على /tools/<slug>", () => {
+  const legacy = ["word-counter", "number-to-words", "hijri-gregorian"];
+  for (const slug of legacy) {
+    const t = TOOLS.find((x) => x.slug === slug);
+    assert.ok(t, `${slug}: اختفت`);
+    assert.equal(t!.route, `/tools/${slug}`);
   }
 });
