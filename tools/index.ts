@@ -36,4 +36,13 @@ export const TOOLS: ToolManifest[] = [
     version: "1.0.0",
     load: () => import("@/tools/number-to-words/tool"),
   },
+  {
+    slug: "hijri-gregorian",
+    nameAr: "التقويم الهجريّ والميلاديّ",
+    descriptionAr: "تحويلٌ في الاتّجاهين مع اسم اليوم — أمّ القرى أو الحسابيّ المدنيّ.",
+    category: "convert",
+    icon: "calendar",
+    version: "1.0.0",
+    load: () => import("@/tools/hijri-gregorian/tool"),
+  },
 ];

@@ -46,6 +46,12 @@ const MAP: Record<string, (p: P) => React.ReactElement> = {
   design: (p) => (
     <svg {...base(p.size, p)}><path d="m13 3 8 8-9.5 9.5H3v-8.5z" /><path d="m10.5 6.5 7 7" /></svg>
   ),
+  calendar: (p) => (
+    <svg {...base(p.size, p)}>
+      <rect x="3" y="5" width="18" height="16" rx="3" />
+      <path d="M8 3v4M16 3v4M3 10h18M8.5 14.5h6l-2-2M15.5 17.5h-6l2 2" />
+    </svg>
+  ),
   numbers: (p) => (
     <svg {...base(p.size, p)}><rect x="14" y="7" width="7" height="10" rx="2.5" /><path d="M10 9H3M10 15H6" /></svg>
   ),
