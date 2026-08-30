@@ -4,10 +4,31 @@ import { useMemo, useState } from "react";
 import { ChipGroup, Field, Note, ResultBox, ToolLayout } from "@/components/tool-kit";
 import { gradientCss, gradientSamples, parseColor, toHex, type Stop } from "@/tools/color-lib";
 import { ColorField } from "@/tools/color-ui";
+import { useStrings } from "@/components/lang";
+
+const S = {
+  ar: {
+    from: "من", to: "إلى", shape: "الشكل", linear: "خطّيّ", radial: "شعاعيّ",
+    oklab: "المزجُ في OKLab", angle: (n: number) => `الزاوية: ${n}°`,
+    css: "CSS", fallback: "بديلٌ متوافقٌ مع القديم",
+    hint: "يحتاج متصفّحاً يدعم فضاءات المزج (٢٠٢٣ فصاعداً) — والسطرُ أسفلَه بديلٌ يعمل في كلّ مكان.",
+    n1: "جرّب أزرقَ وأصفرَ وأطفئ «المزجَ في OKLab»: يمرّ التدرّجُ برماديٍّ موحلٍ في المنتصف. ذلك أنّ المزجَ في sRGB يجمع الأرقامَ لا الألوان، فيهبط التشبّعُ عند التقاء صبغتين متقابلتين.",
+    b: " والمزجُ في OKLab يمرّ بأخضرَ حيويّ", n2: " — وهو ما تتوقّعه العين.",
+  },
+  en: {
+    from: "From", to: "To", shape: "Shape", linear: "Linear", radial: "Radial",
+    oklab: "Mix in OKLab", angle: (n: number) => `Angle: ${n}°`,
+    css: "CSS", fallback: "Fallback for older browsers",
+    hint: "Needs a browser with colour-space interpolation (2023 onwards) — the line below works everywhere.",
+    n1: "Try blue and yellow with \"Mix in OKLab\" turned off: the gradient passes through muddy grey in the middle. That is because mixing in sRGB adds numbers rather than colours, so chroma collapses where two opposing hues meet.",
+    b: " Mixing in OKLab passes through a vivid teal instead", n2: " — which is what the eye expects.",
+  },
+};
 
 type Kind = "linear" | "radial";
 
 export default function Gradient() {
+  const s = useStrings(S);
   const [from, setFrom] = useState("#3366cc");
   const [to, setTo] = useState("#ffb020");
   const [kind, setKind] = useState<Kind>("linear");
@@ -36,24 +57,24 @@ export default function Gradient() {
   return (
     <ToolLayout>
       <div className="flex flex-wrap gap-3">
-        <ColorField id="gr-a" label="من" value={from} onChange={setFrom} />
-        <ColorField id="gr-b" label="إلى" value={to} onChange={setTo} />
+        <ColorField id="gr-a" label={s.from} value={from} onChange={setFrom} />
+        <ColorField id="gr-b" label={s.to} value={to} onChange={setTo} />
       </div>
 
       <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
         <ChipGroup
-          label="الشكل"
+          label={s.shape}
           value={kind}
           onChange={setKind}
-          options={[{ id: "linear", label: "خطّيّ" }, { id: "radial", label: "شعاعيّ" }]}
+          options={[{ id: "linear", label: s.linear }, { id: "radial", label: s.radial }]}
         />
         <button className={`chip ${oklab ? "chip-active" : ""}`} onClick={() => setOklab(!oklab)}>
-          المزجُ في OKLab
+          {s.oklab}
         </button>
       </div>
 
       {kind === "linear" && (
-        <Field label={`الزاوية: ${angle}°`} htmlFor="gr-ang">
+        <Field label={s.angle(angle)} htmlFor="gr-ang">
           <input
             id="gr-ang"
             type="range"
@@ -72,21 +93,19 @@ export default function Gradient() {
       )}
 
       <ResultBox
-        title="CSS"
+        title={s.css}
         value={css ? `background: ${css};` : ""}
         dir="ltr"
         mono
-        hint={oklab ? "يحتاج متصفّحاً يدعم فضاءات المزج (٢٠٢٣ فصاعداً) — والسطرُ أسفلَه بديلٌ يعمل في كلّ مكان." : undefined}
+        hint={oklab ? s.hint : undefined}
       />
 
       {oklab && srgbCss && (
-        <ResultBox title="بديلٌ متوافقٌ مع القديم" value={`background: ${srgbCss};`} dir="ltr" mono />
+        <ResultBox title={s.fallback} value={`background: ${srgbCss};`} dir="ltr" mono />
       )}
 
       <Note>
-        جرّب أزرقَ وأصفرَ وأطفئ «المزجَ في OKLab»: يمرّ التدرّجُ برماديٍّ موحلٍ في المنتصف. ذلك أنّ المزجَ
-        في sRGB يجمع الأرقامَ لا الألوان، فيهبط التشبّعُ عند التقاء صبغتين متقابلتين.
-        <b className="font-semibold text-ink"> والمزجُ في OKLab يمرّ بأخضرَ حيويّ</b> — وهو ما تتوقّعه العين.
+        {s.n1}<b className="font-semibold text-ink">{s.b}</b>{s.n2}
       </Note>
     </ToolLayout>
   );

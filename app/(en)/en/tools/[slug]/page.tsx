@@ -84,7 +84,11 @@ export default async function EnToolPage({ params }: { params: Promise<{ slug: s
           title={tool.title.en}
           instructions={tool.instructionsEn}
           capabilities={tool.capabilities}
-          nextSteps={tool.nextSteps?.filter((n) => TOOLS.find((x) => x.slug === n.slug)?.langs.includes("en"))}
+          /* الخطوةُ تُعرَض متى كانت الأداةُ الهدفُ إنجليزيّةً **ولها عنوانٌ إنجليزيّ**؛
+             وإلّا حُذفت — فخطوةٌ بعنوانٍ عربيٍّ في صفحةٍ إنكليزيّةٍ أسوأُ من لا خطوة. */
+          nextSteps={tool.nextSteps
+            ?.filter((n) => n.labelEn && TOOLS.find((x) => x.slug === n.slug)?.langs.includes("en"))
+            .map((n) => ({ ...n, label: n.labelEn! }))}
           demo={tool.demo}
           lang="en"
         >

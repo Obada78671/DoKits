@@ -4,18 +4,43 @@ import { useEffect, useMemo, useState } from "react";
 import { ChipGroup, ErrorNote, Field, NumberField, Note, ToolLayout } from "@/components/tool-kit";
 import { OUTPUT_FORMATS, fitDimensions, outputName, type FormatId } from "@/tools/image-lib";
 import { ImagePicker, LocalNote, downloadBlob, useImagePicker } from "@/tools/image-ui";
+import { useLang, useStrings } from "@/components/lang";
+import { FORMAT_EN } from "@/tools/names-en";
 
-const PRESETS = [
-  { id: "0", label: "الأصل" },
-  { id: "1920", label: "1920 عرض" },
-  { id: "1280", label: "1280 عرض" },
-  { id: "800", label: "800 عرض" },
-  { id: "400", label: "400 عرض" },
-];
+const S = {
+  ar: {
+    width: "العرض", original: "الأصل", format: "الصيغة",
+    quality: (n: number) => `الجودة: ${n}%`,
+    qHint: "ما بين ٧٥ و٨٥ هو موضعُ التوازن عادةً — وما فوق ٩٠ يكبّر الملفَّ بلا فرقٍ مرئيّ.",
+    upscale: "اسمح بالتكبير فوق الأصل",
+    out: "الناتج", srcSize: "حجمُ الأصل", outSize: "حجمُ الناتج",
+    smaller: (n: number) => `أصغرُ بنسبة ${n}٪ من الأصل.`,
+    bigger: (n: number) => `أكبرُ من الأصل بـ${n}٪ — الأصلُ مضغوطٌ جيّداً أصلاً، فأبقِه.`,
+    preview: "معاينةُ الناتج", download: "نزّل",
+    n1: "الرسمُ على canvas ", b: "يمحو بيانات EXIF", n2: " — موقعَ التصوير وطرازَ الجهاز وتاريخَه. وهذه ميزةٌ لا نقص: صورةٌ تنشرها بعد تمريرها هنا لا تحمل إحداثيّاتِ بيتك.",
+    bytes: "بايت", kb: "ك.ب",
+  },
+  en: {
+    width: "Width", original: "Original", format: "Format",
+    quality: (n: number) => `Quality: ${n}%`,
+    qHint: "75–85 is usually the balance point — above 90 the file grows with no visible gain.",
+    upscale: "Allow upscaling beyond the original",
+    out: "Output", srcSize: "Original size", outSize: "Output size",
+    smaller: (n: number) => `${n}% smaller than the original.`,
+    bigger: (n: number) => `${n}% larger than the original — it was already well compressed, so keep it.`,
+    preview: "Output preview", download: "Download",
+    n1: "Drawing on a canvas ", b: "strips EXIF data", n2: " — where the photo was taken, on what device, and when. That is a feature, not a loss: an image published after passing through here does not carry your home coordinates.",
+    bytes: "bytes", kb: "KB",
+  },
+};
 
-const kb = (n: number) => (n < 1024 ? `${n} بايت` : `${(n / 1024).toFixed(0)} ك.ب`);
+const PRESET_W = ["0", "1920", "1280", "800", "400"];
+const kb = (n: number, u: { bytes: string; kb: string }) =>
+  n < 1024 ? `${n} ${u.bytes}` : `${(n / 1024).toFixed(0)} ${u.kb}`;
 
 export default function ImageResize() {
+  const s = useStrings(S);
+  const isEn = useLang() === "en";
   const { picked, error, pick } = useImagePicker();
   const [preset, setPreset] = useState("1280");
   const [format, setFormat] = useState<FormatId>("image/webp");
@@ -69,18 +94,23 @@ export default function ImageResize() {
 
       {picked && (
         <>
-          <ChipGroup label="العرض" value={preset} onChange={setPreset} options={PRESETS} />
+          <ChipGroup
+            label={s.width}
+            value={preset}
+            onChange={setPreset}
+            options={PRESET_W.map((w) => ({ id: w, label: w === "0" ? s.original : (isEn ? `${w} wide` : `${w} عرض`) }))}
+          />
 
           <ChipGroup
-            label="الصيغة"
+            label={s.format}
             value={format}
             onChange={setFormat}
-            hint={fmt.note}
-            options={OUTPUT_FORMATS.map((f) => ({ id: f.id, label: f.name, title: f.note }))}
+            hint={isEn ? FORMAT_EN[format] ?? fmt.note : fmt.note}
+            options={OUTPUT_FORMATS.map((f) => ({ id: f.id, label: f.name, title: isEn ? FORMAT_EN[f.id] ?? f.note : f.note }))}
           />
 
           {fmt.lossy && (
-            <Field label={`الجودة: ${quality}%`} htmlFor="ir-q" hint="ما بين ٧٥ و٨٥ هو موضعُ التوازن عادةً — وما فوق ٩٠ يكبّر الملفَّ بلا فرقٍ مرئيّ.">
+            <Field label={s.quality(quality)} htmlFor="ir-q" hint={s.qHint}>
               <input
                 id="ir-q"
                 type="range"
@@ -94,16 +124,16 @@ export default function ImageResize() {
           )}
 
           <button className={`chip self-start ${upscale ? "chip-active" : ""}`} onClick={() => setUpscale(!upscale)}>
-            اسمح بالتكبير فوق الأصل
+            {s.upscale}
           </button>
 
           <div className="rounded-m border border-line bg-surface">
             <div className="grid grid-cols-2 divide-x divide-x-reverse divide-line sm:grid-cols-4">
               {[
-                { label: "الأصل", value: `${src!.w}×${src!.h}` },
-                { label: "الناتج", value: dim ? `${dim.w}×${dim.h}` : "—" },
-                { label: "حجمُ الأصل", value: kb(picked.file.size) },
-                { label: "حجمُ الناتج", value: busy ? "…" : out ? kb(out.blob.size) : "—" },
+                { label: s.original, value: `${src!.w}×${src!.h}` },
+                { label: s.out, value: dim ? `${dim.w}×${dim.h}` : "—" },
+                { label: s.srcSize, value: kb(picked.file.size, s) },
+                { label: s.outSize, value: busy ? "…" : out ? kb(out.blob.size, s) : "—" },
               ].map((t) => (
                 <div key={t.label} className="px-3 py-3 text-center">
                   <div dir="ltr" className="font-mono text-[1.05rem] tabular-nums">{t.value}</div>
@@ -114,8 +144,8 @@ export default function ImageResize() {
             {out && !busy && (
               <p className={`border-t border-line px-4 py-2.5 text-[0.88rem] ${saved > 0 ? "text-ink" : "text-muted"}`}>
                 {saved > 0
-                  ? `أصغرُ بنسبة ${saved}٪ من الأصل.`
-                  : `أكبرُ من الأصل بـ${Math.abs(saved)}٪ — الأصلُ مضغوطٌ جيّداً أصلاً، فأبقِه.`}
+                  ? s.smaller(saved)
+                  : s.bigger(Math.abs(saved))}
               </p>
             )}
           </div>
@@ -125,14 +155,14 @@ export default function ImageResize() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={out.url}
-                alt="معاينةُ الناتج"
+                alt={s.preview}
                 className="max-h-80 w-full rounded-m border border-line object-contain"
               />
               <button
                 className="btn btn-primary self-start"
                 onClick={() => downloadBlob(out.blob, outputName(picked.file.name, dim!, fmt.ext))}
               >
-                نزّل {outputName(picked.file.name, dim!, fmt.ext)}
+                {s.download} {outputName(picked.file.name, dim!, fmt.ext)}
               </button>
             </>
           )}
@@ -142,8 +172,7 @@ export default function ImageResize() {
       <LocalNote />
 
       <Note>
-        الرسمُ على canvas <b className="font-semibold text-ink">يمحو بيانات EXIF</b> — موقعَ التصوير
-        وطرازَ الجهاز وتاريخَه. وهذه ميزةٌ لا نقص: صورةٌ تنشرها بعد تمريرها هنا لا تحمل إحداثيّاتِ بيتك.
+        {s.n1}<b className="font-semibold text-ink">{s.b}</b>{s.n2}
       </Note>
     </ToolLayout>
   );

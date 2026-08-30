@@ -289,3 +289,32 @@ test("البصمةُ تُحسب على بايتات UTF-8 لا على المحا
   assert.equal(a, b);
   assert.equal(a.length, 64);
 });
+
+test("شرحُ cron الإنجليزيُّ يُبنى من الحقول لا يُترجَم", async () => {
+  const { describeCronEn } = await import("../tools/dev-lib.ts");
+  const cases: [string, RegExp][] = [
+    ["*/15 * * * *", /^Every 15 minutes, every day\.$/],
+    ["0 2 * * *", /^At 02:00, every day\.$/],
+    ["30 8 * * 1-5", /^At 08:30, on Monday to Friday\.$/],
+    ["0 0 1 \\* \\*".replace(/\\/g, ""), /on day 1 of the month/],
+    ["0 9 * * 0,1,2,5", /Sunday to Tuesday and Friday/],
+    ["0 0 1 * 1", /or .*(OR)/],
+  ];
+  for (const [expr, re] of cases) {
+    const r = parseCron(expr);
+    assert.ok(r.ok, `${expr}: لم يُحلَّل`);
+    assert.match(describeCronEn(r.cron), re, expr);
+  }
+});
+
+test("رموزُ الأخطاء ثابتةٌ مهما تبدّلت الصياغة", () => {
+  assert.equal(parseCron("").ok, false);
+  const six = parseCron("0 0 9 * * 1");
+  assert.equal(!six.ok && six.code, "seconds");
+  const many = parseCron("0 9 *");
+  assert.equal(!many.ok && many.code, "fields");
+  const bad = parseCron("0 99 * * *");
+  assert.equal(!bad.ok && bad.code, "field");
+  assert.equal(inspectUuid("لا").code, "bad");
+  assert.equal(inspectUuid(uuidV4()).code, "v4");
+});

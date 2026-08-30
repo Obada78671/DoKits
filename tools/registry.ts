@@ -76,6 +76,8 @@ export type ToolDemo = {
 export type NextStep = {
   slug: string;
   label: string;
+  /** لازمٌ متى كانت الأداتان إنجليزيّتين — وإلّا حُذفت الخطوةُ من `/en` بدل أن تُعرَض عربيّة */
+  labelEn?: string;
   carry?: Record<string, string>;
 };
 
@@ -425,6 +427,11 @@ export function validateRegistry(all: ToolSummary[]): string[] {
       if (!ids.has(n.slug)) errors.push(`${t.slug}: خطوةٌ تالية إلى أداةٍ غير موجودة «${n.slug}»`);
       if (n.slug === t.id) errors.push(`${t.slug}: خطوةٌ تالية إلى نفسه`);
       if (!n.label.trim()) errors.push(`${t.slug}: خطوةٌ تالية بلا نصّ`);
+      // خطوةٌ بين أداتين إنجليزيّتين بلا عنوانٍ إنجليزيٍّ تختفي من `/en` بلا سبب
+      const target = all.find((x) => x.id === n.slug);
+      if (t.langs.includes("en") && target?.langs.includes("en") && !n.labelEn) {
+        errors.push(`${t.slug} ← ${n.slug}: خطوةٌ بين أداتين إنجليزيّتين بلا labelEn`);
+      }
     }
     for (const r of t.relatedToolIds ?? []) {
       if (!ids.has(r)) errors.push(`${t.slug}: صلةٌ مُعلَنةٌ إلى أداةٍ غير موجودة «${r}»`);

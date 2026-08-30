@@ -96,6 +96,42 @@ const NAMED: Record<number, string> = {
   0xfeff: "علامةُ ترتيبِ بايتات (BOM)", 0xfffd: "محرفُ بديلٍ — دليلُ ترميزٍ تالف",
 };
 
+const NAMED_EN: Record<number, string> = {
+  0x09: "Tab", 0x0a: "Line feed (LF)", 0x0d: "Carriage return (CR)",
+  0x20: "Space", 0xa0: "Non-breaking space (NBSP)", 0xad: "Soft hyphen (SHY)",
+  0x061c: "Arabic letter mark (ALM)", 0x0640: "Tatweel / kashida",
+  0x200b: "Zero-width space (ZWSP)", 0x200c: "Zero-width non-joiner (ZWNJ)", 0x200d: "Zero-width joiner (ZWJ)",
+  0x200e: "Left-to-right mark (LRM)", 0x200f: "Right-to-left mark (RLM)",
+  0x202a: "LTR embedding (LRE)", 0x202b: "RTL embedding (RLE)",
+  0x202c: "Pop directional formatting (PDF)", 0x202d: "LTR override (LRO)", 0x202e: "RTL override (RLO)",
+  0x2066: "LTR isolate (LRI)", 0x2067: "RTL isolate (RLI)", 0x2069: "Pop directional isolate (PDI)",
+  0xfeff: "Byte order mark (BOM)", 0xfffd: "Replacement character — evidence of broken encoding",
+};
+
+const RANGE_EN: [number, number, string][] = [
+  [0x0610, 0x061a, "Quranic annotation mark"],
+  [0x064b, 0x0652, "Arabic diacritic"],
+  [0x0653, 0x0655, "Hamza or madda"],
+  [0x0660, 0x0669, "Arabic-Indic digit"],
+  [0x06f0, 0x06f9, "Extended Arabic-Indic digit"],
+  [0x0600, 0x06ff, "Arabic letter"],
+  [0xfb50, 0xfefc, "Arabic presentation form (compatibility)"],
+  [0x30, 0x39, "Latin digit"],
+  [0x41, 0x5a, "Latin letter"],
+  [0x61, 0x7a, "Latin letter"],
+];
+
+/** الاسمُ بالإنجليزيّة يُبنى بالبنية نفسِها لا بترجمة النصّ العربيّ */
+function charNameEn(cp: number): string {
+  const named = NAMED_EN[cp];
+  if (named) return named;
+  for (const [lo, hi, name] of RANGE_EN) if (cp >= lo && cp <= hi) return name;
+  if (cp < 0x20 || (cp >= 0x7f && cp <= 0x9f)) return "Control character";
+  if (cp >= 0x1f300) return "Emoji";
+  if (cp < 0x80) return "Punctuation or symbol";
+  return "Other character";
+}
+
 function charName(cp: number): string {
   const named = NAMED[cp];
   if (named) return named;
@@ -119,7 +155,7 @@ const INVISIBLE = new Set([
   0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069, 0xfeff,
 ]);
 
-export function inspectChars(text: string, limit = 400): CharInfo[] {
+export function inspectChars(text: string, limit = 400, lang: "ar" | "en" = "ar"): CharInfo[] {
   const out: CharInfo[] = [];
   let i = 0;
   for (const ch of text) {
@@ -129,7 +165,7 @@ export function inspectChars(text: string, limit = 400): CharInfo[] {
       index: i, ch, cp,
       hex: `U+${cp.toString(16).toUpperCase().padStart(4, "0")}`,
       utf8: [...new TextEncoder().encode(ch)],
-      name: charName(cp),
+      name: lang === "en" ? charNameEn(cp) : charName(cp),
       invisible: INVISIBLE.has(cp),
     });
     i += ch.length;
@@ -159,7 +195,9 @@ export function textStats(text: string): TextStats {
 
 export type JsonResult =
   | { ok: true; out: string; keys: number; depth: number }
-  | { ok: false; message: string; line?: number; col?: number };
+  /** `empty` علمٌ لا رسالة: نصُّ «لا شيء» يخصّ الواجهةَ ولغتَها لا المكتبة.
+   *  أمّا `message` فرسالةُ المحرّك، وهي إنجليزيّةٌ أصلاً في كلّ متصفّح. */
+  | { ok: false; message: string; line?: number; col?: number; empty?: boolean };
 
 function sortDeep(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(sortDeep);
@@ -190,7 +228,7 @@ export function formatJson(
   text: string,
   opts: { indent?: number | "tab"; sortKeys?: boolean; minify?: boolean } = {},
 ): JsonResult {
-  if (!text.trim()) return { ok: false, message: "لا شيءَ لتنسيقه." };
+  if (!text.trim()) return { ok: false, message: "", empty: true };
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -244,16 +282,19 @@ export function toCsvCell(v: unknown, delim: string): string {
   return needsQuote(s, delim) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export type ConvertResult = { ok: true; out: string; rows: number; cols: number } | { ok: false; error: string };
+export type ConvertError = "noRows" | "headerOnly" | "badJson" | "emptyArray" | "notObjects";
+export type ConvertResult =
+  | { ok: true; out: string; rows: number; cols: number }
+  | { ok: false; code: ConvertError; error: string; detail?: string };
 
 export function csvToJson(text: string, delim = ",", header = true): ConvertResult {
   const rows = parseCsv(text, delim);
-  if (!rows.length) return { ok: false, error: "لا صفوفَ في المُدخل." };
+  if (!rows.length) return { ok: false, code: "noRows", error: "لا صفوفَ في المُدخل." };
   if (!header) {
     return { ok: true, out: JSON.stringify(rows, null, 2), rows: rows.length, cols: rows[0].length };
   }
   const [head, ...body] = rows;
-  if (!body.length) return { ok: false, error: "فيه سطرُ عناوينَ ولا بيانات." };
+  if (!body.length) return { ok: false, code: "headerOnly", error: "فيه سطرُ عناوينَ ولا بيانات." };
   const objs = body.map((r) =>
     Object.fromEntries(head.map((h, i) => [h.trim() || `عمود${i + 1}`, r[i] ?? ""])),
   );
@@ -263,12 +304,12 @@ export function csvToJson(text: string, delim = ",", header = true): ConvertResu
 export function jsonToCsv(text: string, delim = ","): ConvertResult {
   let data: unknown;
   try { data = JSON.parse(text); } catch (e) {
-    return { ok: false, error: `JSON غيرُ صالح: ${e instanceof Error ? e.message : ""}` };
+    return { ok: false, code: "badJson", error: "JSON غيرُ صالح", detail: e instanceof Error ? e.message : "" };
   }
   const arr = Array.isArray(data) ? data : [data];
-  if (!arr.length) return { ok: false, error: "المصفوفةُ فارغة." };
+  if (!arr.length) return { ok: false, code: "emptyArray", error: "المصفوفةُ فارغة." };
   if (arr.some((r) => typeof r !== "object" || r === null || Array.isArray(r))) {
-    return { ok: false, error: "يُتوقَّع مصفوفةُ كائناتٍ — كلُّ كائنٍ صفّ." };
+    return { ok: false, code: "notObjects", error: "يُتوقَّع مصفوفةُ كائناتٍ — كلُّ كائنٍ صفّ." };
   }
   const cols: string[] = [];
   for (const r of arr as Record<string, unknown>[]) {
@@ -284,9 +325,16 @@ export function jsonToCsv(text: string, delim = ","): ConvertResult {
 /* ═══════════ JWT ═══════════ */
 
 export type JwtClaim = { key: string; value: string; note?: string };
+export type JwtError = "parts" | "header" | "payload";
 export type JwtResult =
   | { ok: true; header: string; payload: string; signature: string; alg: string; typ: string; claims: JwtClaim[]; expired?: boolean }
-  | { ok: false; error: string };
+  | { ok: false; code: JwtError; error: string; parts?: number };
+
+export const CLAIM_NAMES_EN: Record<string, string> = {
+  iss: "Issuer", sub: "Subject (user)", aud: "Audience",
+  exp: "Expires at", nbf: "Not valid before", iat: "Issued at", jti: "Token ID",
+  scope: "Scopes", email: "Email", name: "Name", role: "Role",
+};
 
 const CLAIM_NAMES: Record<string, string> = {
   iss: "المُصدِر", sub: "الموضوع (المستخدم)", aud: "الجمهور المقصود",
@@ -304,7 +352,7 @@ export function decodeJwt(token: string, now = 0): JwtResult {
   const t = token.trim().replace(/^Bearer\s+/i, "");
   const parts = t.split(".");
   if (parts.length !== 3) {
-    return { ok: false, error: `الرمزُ يجب أن يكون ثلاثةَ أجزاءٍ يفصلها نقطة — وجدتُ ${parts.length}.` };
+    return { ok: false, code: "parts", parts: parts.length, error: `الرمزُ يجب أن يكون ثلاثةَ أجزاءٍ يفصلها نقطة — وجدتُ ${parts.length}.` };
   }
   const dec = (p: string) => {
     const r = fromBase64(p);
@@ -313,8 +361,8 @@ export function decodeJwt(token: string, now = 0): JwtResult {
   };
   const header = dec(parts[0]);
   const payload = dec(parts[1]);
-  if (!header) return { ok: false, error: "تعذّر فكُّ الترويسة — ليست Base64URL لكائن JSON." };
-  if (!payload) return { ok: false, error: "تعذّر فكُّ الحمولة — ليست Base64URL لكائن JSON." };
+  if (!header) return { ok: false, code: "header", error: "تعذّر فكُّ الترويسة — ليست Base64URL لكائن JSON." };
+  if (!payload) return { ok: false, code: "payload", error: "تعذّر فكُّ الحمولة — ليست Base64URL لكائن JSON." };
 
   const claims: JwtClaim[] = Object.entries(payload).map(([key, v]) => {
     const label = CLAIM_NAMES[key];
@@ -341,7 +389,10 @@ export function decodeJwt(token: string, now = 0): JwtResult {
 
 export type CronField = { values: Set<number>; star: boolean; step?: number };
 export type CronParsed = { minute: CronField; hour: CronField; dom: CronField; month: CronField; dow: CronField };
-export type CronResult = { ok: true; cron: CronParsed; text: string } | { ok: false; error: string };
+export type CronError = "empty" | "seconds" | "fields" | "field";
+export type CronResult =
+  | { ok: true; cron: CronParsed; text: string }
+  | { ok: false; code: CronError; error: string; count?: number; field?: string };
 
 const MONTH_NAMES = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيّار", "حزيران", "تمّوز", "آب", "أيلول", "تشرين الأوّل", "تشرين الثاني", "كانون الأوّل"];
 const DOW_NAMES = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
@@ -386,11 +437,11 @@ function parseField(spec: string, min: number, max: number, abbr?: string[]): Cr
 
 export function parseCron(expr: string): CronResult {
   const raw = expr.trim().toLowerCase();
-  if (!raw) return { ok: false, error: "اكتب تعبيرَ cron." };
+  if (!raw) return { ok: false, code: "empty", error: "اكتب تعبيرَ cron." };
   const line = ALIASES[raw] ?? raw;
   const f = line.split(/\s+/);
-  if (f.length === 6) return { ok: false, error: "ستّةُ حقول: هذا نمطُ الثواني (Quartz/Spring) — أزل حقلَ الثواني الأوّل." };
-  if (f.length !== 5) return { ok: false, error: `يُتوقَّع خمسةُ حقول (دقيقة ساعة يوم شهر يوم-أسبوع) — وجدتُ ${f.length}.` };
+  if (f.length === 6) return { ok: false, code: "seconds", error: "ستّةُ حقول: هذا نمطُ الثواني (Quartz/Spring) — أزل حقلَ الثواني الأوّل." };
+  if (f.length !== 5) return { ok: false, code: "fields", count: f.length, error: `يُتوقَّع خمسةُ حقول (دقيقة ساعة يوم شهر يوم-أسبوع) — وجدتُ ${f.length}.` };
   const minute = parseField(f[0], 0, 59);
   const hour = parseField(f[1], 0, 23);
   const dom = parseField(f[2], 1, 31);
@@ -398,7 +449,7 @@ export function parseCron(expr: string): CronResult {
   const dow = parseField(f[4], 0, 7, DOW_ABBR);
   const bad = [["الدقيقة", minute], ["الساعة", hour], ["اليوم", dom], ["الشهر", month], ["يوم الأسبوع", dow]]
     .find(([, v]) => v === null);
-  if (bad) return { ok: false, error: `حقلُ ${bad[0]} غيرُ صالح.` };
+  if (bad) return { ok: false, code: "field", field: String(bad[0]), error: `حقلُ ${bad[0]} غيرُ صالح.` };
   const cron: CronParsed = { minute: minute!, hour: hour!, dom: dom!, month: month!, dow: dow! };
   return { ok: true, cron, text: describeCron(cron) };
 }
@@ -457,6 +508,67 @@ export function describeCron(c: CronParsed): string {
 
   const both = !c.dom.star && !c.dow.star;
   return `${time}، ${when.join(both ? " أو " : " ")}${both ? " (cron يجمع الشرطين بـ«أو» متى قُيّد الحقلان)" : ""}.`;
+}
+
+const DOW_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTH_EN = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+
+const joinEn = (items: string[]): string =>
+  items.length <= 1 ? (items[0] ?? "")
+    : items.length === 2 ? `${items[0]} and ${items[1]}`
+      : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+
+function runsEn(values: number[], label: (n: number) => string): string {
+  const parts: string[] = [];
+  for (let i = 0; i < values.length; ) {
+    let j = i;
+    while (j + 1 < values.length && values[j + 1] === values[j] + 1) j++;
+    if (j - i >= 2) parts.push(`${label(values[i])} to ${label(values[j])}`);
+    else parts.push(...values.slice(i, j + 1).map(label));
+    i = j + 1;
+  }
+  return joinEn(parts);
+}
+
+const plural = (n: number, w: string) => (n === 1 ? `every ${w}` : `every ${n} ${w}s`);
+
+/**
+ * الشرحُ الإنجليزيُّ يُبنى من الحقول نفسِها لا يُترجَم من الجملة العربيّة:
+ * ترجمةُ نصٍّ مولَّدٍ تُراكم أخطاءَ الصياغة، والبناءُ من المصدر يبقى صحيحاً
+ * مهما تعقّد التعبير.
+ */
+export function describeCronEn(c: CronParsed): string {
+  let time: string;
+  if (c.minute.star && c.hour.star) time = "Every minute";
+  else if (c.hour.star) {
+    time = c.minute.step
+      ? plural(c.minute.step, "minute").replace(/^e/, "E")
+      : `At minute ${runsEn(sorted(c.minute), String)} past every hour`;
+  } else if (c.minute.star) {
+    time = c.hour.step
+      ? `Every minute during ${plural(c.hour.step, "hour")}`
+      : `Every minute during ${runsEn(sorted(c.hour), pad2)}:00`;
+  } else {
+    const times: string[] = [];
+    for (const h of sorted(c.hour)) for (const m of sorted(c.minute)) times.push(`${pad2(h)}:${pad2(m)}`);
+    time = times.length <= 6
+      ? `At ${joinEn(times)}`
+      : `${times.length} times a day, from ${times[0]} to ${times[times.length - 1]}`;
+  }
+
+  const when: string[] = [];
+  if (!c.dom.star) {
+    when.push(c.dom.step
+      ? `${plural(c.dom.step, "day")} of the month`
+      : `on day ${runsEn(sorted(c.dom), String)} of the month`);
+  }
+  if (!c.dow.star) when.push(`on ${runsEn(sorted(c.dow), (d) => DOW_EN[d])}`);
+  if (!c.month.star) when.push(`in ${runsEn(sorted(c.month), (m) => MONTH_EN[m - 1])}`);
+  if (!when.length) when.push("every day");
+
+  const both = !c.dom.star && !c.dow.star;
+  return `${time}, ${when.join(both ? " or " : " ")}${both ? " (cron joins the two day fields with OR when both are restricted)" : ""}.`;
 }
 
 function dayMatches(c: CronParsed, d: Date): boolean {
@@ -579,15 +691,19 @@ export function uuidV7(ms: number): string {
 export const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 export const MAX_UUID = "ffffffff-ffff-ffff-ffff-ffffffffffff";
 
-export type UuidInfo = { valid: boolean; version?: number; variant?: string; timestamp?: string; note: string };
+export type UuidNote = "bad" | "nil" | "max" | "v1" | "v3" | "v4" | "v5" | "v7" | "other";
+export type UuidInfo = {
+  valid: boolean; version?: number; variant?: string; timestamp?: string;
+  code: UuidNote; note: string;
+};
 
 export function inspectUuid(value: string): UuidInfo {
   const v = value.trim().toLowerCase().replace(/^urn:uuid:/, "").replace(/^\{|\}$/g, "");
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)) {
-    return { valid: false, note: "ليس UUID بالشكل المعياريّ (٨-٤-٤-٤-١٢ خانةً ستّ عشريّة)." };
+    return { valid: false, code: "bad", note: "ليس UUID بالشكل المعياريّ (٨-٤-٤-٤-١٢ خانةً ستّ عشريّة)." };
   }
-  if (v === NIL_UUID) return { valid: true, note: "المعرّفُ الصفريّ (nil) — يعني «لا معرّف»." };
-  if (v === MAX_UUID) return { valid: true, note: "المعرّفُ الأقصى (max)." };
+  if (v === NIL_UUID) return { valid: true, code: "nil", note: "المعرّفُ الصفريّ (nil) — يعني «لا معرّف»." };
+  if (v === MAX_UUID) return { valid: true, code: "max", note: "المعرّفُ الأقصى (max)." };
   const version = parseInt(v[14], 16);
   const variantNibble = parseInt(v[19], 16);
   const variant = variantNibble >= 8 && variantNibble <= 0xb ? "RFC 4122" : "قديمٌ أو غيرُ معياريّ";
@@ -603,7 +719,8 @@ export function inspectUuid(value: string): UuidInfo {
     const ms = Number(BigInt("0x" + v.replace(/-/g, "").slice(0, 12)));
     timestamp = new Date(ms).toISOString().replace("T", " ").slice(0, 19) + "Z";
   }
-  return { valid: true, version, variant, timestamp, note: notes[version] ?? `الإصدار ${version}.` };
+  const code = ([1, 3, 4, 5, 7].includes(version) ? `v${version}` : "other") as UuidNote;
+  return { valid: true, version, variant, timestamp, code, note: notes[version] ?? `الإصدار ${version}.` };
 }
 
 /* ═══════════ البصمات ═══════════ */
