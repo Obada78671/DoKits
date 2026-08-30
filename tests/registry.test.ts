@@ -149,7 +149,9 @@ test("المرادفاتُ تصل بين ما يكتبه الناسُ وما ن�
   assert.equal(searchTools(TOOLS, "VAT")[0]?.tool.slug, "vat");
   assert.equal(searchTools(TOOLS, "قيمة مضافة")[0]?.tool.slug, "vat");
   assert.equal(searchTools(TOOLS, "المبلغ بالحروف")[0]?.tool.slug, "number-to-words");
-  assert.equal(searchTools(TOOLS, "باسورد").length, 0, "لا أداةَ كلمات مرور بعد — المرادفُ لا يخترع نتيجة");
+  assert.equal(searchTools(TOOLS, "باسورد")[0]?.tool.slug, "password-gen");
+  // المرادفُ لا يخترع نتيجةً لما لا وجودَ له
+  assert.equal(searchTools(TOOLS, "حجز طيران").length, 0);
 });
 
 test("الروابطُ القديمة لم تنكسر: كلُّ أداةٍ ما تزال على /tools/<slug>", () => {

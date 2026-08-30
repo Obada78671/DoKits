@@ -154,6 +154,27 @@ const MAP: Record<string, (p: P) => React.ReactElement> = {
   counter: (p) => (
     <svg {...base(p.size, p)}><path d="M10 3 8 21M16 3l-2 18M4 9h17M3 15h17" /></svg>
   ),
+  glyph: (p) => (
+    <svg {...base(p.size, p)}><path d="M5 19 10.5 5h3L19 19M8 14h8" /></svg>
+  ),
+  braces: (p) => (
+    <svg {...base(p.size, p)}><path d="M9 4a3 3 0 0 0-3 3v2a3 3 0 0 1-3 3 3 3 0 0 1 3 3v2a3 3 0 0 0 3 3M15 4a3 3 0 0 1 3 3v2a3 3 0 0 0 3 3 3 3 0 0 0-3 3v2a3 3 0 0 1-3 3" /></svg>
+  ),
+  table: (p) => (
+    <svg {...base(p.size, p)}><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M3 9.5h18M9 9.5V20M3 15h18" /></svg>
+  ),
+  key: (p) => (
+    <svg {...base(p.size, p)}><circle cx="7.5" cy="12" r="3.5" /><path d="M11 12h10M18 12v3.5M15 12v2.5" /></svg>
+  ),
+  shield: (p) => (
+    <svg {...base(p.size, p)}><path d="M12 3 5 6v6c0 4.2 3 7.5 7 9 4-1.5 7-4.8 7-9V6z" /><path d="m9 12 2 2 4-4" /></svg>
+  ),
+  fingerprint: (p) => (
+    <svg {...base(p.size, p)}><path d="M12 4a8 8 0 0 0-8 8v3M20 12a8 8 0 0 0-4-6.9M8 20a12 12 0 0 0 1.5-6 2.5 2.5 0 0 1 5 0c0 2-.3 4-1 6M19 16.5a20 20 0 0 1-.7 4M12 12v3c0 1.7-.3 3.4-1 5" /></svg>
+  ),
+  idcard: (p) => (
+    <svg {...base(p.size, p)}><rect x="2" y="5" width="20" height="14" rx="3" /><circle cx="8" cy="11" r="2" /><path d="M5 16a3.5 3.5 0 0 1 6 0M14 10h5M14 14h3" /></svg>
+  ),
   tool: (p) => (
     <svg {...base(p.size, p)}><path d="M14.5 4.5a5 5 0 0 0-6.6 6.2L3 15.6V21h5.4l4.9-4.9a5 5 0 0 0 6.2-6.6l-3.4 3.4-3.5-1-1-3.5z" /></svg>
   ),
