@@ -7,7 +7,8 @@ export async function Header() {
   const user = await getUser();
   return (
     <header className="border-b border-line bg-surface">
-      <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3">
+      {/* يلتفّ سطراً ثانياً على الشاشات الضيّقة — الشريطُ الكامل لا يتّسع لـ375px */}
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:gap-x-4 sm:px-5">
         <Link href="/" className="flex items-center gap-2.5 no-underline">
           <LogoMark size={32} />
           <span dir="ltr" className="text-xl font-bold tracking-tight text-ink">

@@ -27,4 +27,13 @@ export const TOOLS: ToolManifest[] = [
     version: "1.0.0",
     load: () => import("@/tools/word-counter/tool"),
   },
+  {
+    slug: "number-to-words",
+    nameAr: "الأرقام إلى كلمات",
+    descriptionAr: "تفقيطُ المبالغ للفواتير والشيكات بالعربيّة والإنكليزيّة — بقواعد العدد الصحيحة.",
+    category: "business",
+    icon: "numbers",
+    version: "1.0.0",
+    load: () => import("@/tools/number-to-words/tool"),
+  },
 ];
