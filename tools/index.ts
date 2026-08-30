@@ -732,7 +732,7 @@ export const TOOLS: ToolManifest[] = [
     title: "مولّد UUID",
     titleEn: "UUID Generator",
     description: "توليدُ v4 العشوائيّ وv7 الزمنيّ، وفحصُ أيِّ معرّفٍ لمعرفة إصداره وزمنه.",
-    category: "dev", subcategory: "data", icon: "idcard", version: "1.0.0", publishedAt: "2026-08-30",
+    category: "dev", subcategory: "data", icon: "idcard", version: "1.1.0", publishedAt: "2026-08-30",
     keywords: ["uuid", "معرّف", "guid", "عشوائيّ", "مفتاح", "قاعدة بيانات", "v4", "v7"],
     keywordsEn: ["uuid generator", "guid", "uuid v4", "uuid v7"],
     complexity: "medium",
@@ -741,6 +741,7 @@ export const TOOLS: ToolManifest[] = [
     howItWorks: [
       "‏v4 عشوائيٌّ بالكامل (١٢٢ بتّاً) وهو الأشيع، لكنّه مفتاحاً أساسيّاً يبعثر فهرسَ القاعدة.",
       "‏v7 يبدأ بزمن يونكس بالمللي، فيُلحِق الجديدَ بآخر الفهرس كالرقم المتسلسل مع بقائه غيرَ قابلٍ للتخمين.",
+      "الطابعُ الزمنيُّ وحدَه لا يرتّب: عشراتُ المعرّفات تُولَّد في المللي الواحدة فتتساوى طوابعُها. لذلك يحمل v7 هنا عدّاداً يتزايد داخل المللي — الطريقةَ الأولى في RFC 9562.",
       "الفحصُ يقرأ الإصدارَ والنمطَ من موضعهما المحدَّد في المعرّف، ويستخرج زمنَ v7.",
     ],
     load: () => import("@/tools/uuid/tool"),

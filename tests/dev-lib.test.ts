@@ -262,6 +262,13 @@ test("UUID v7 يحمل الزمنَ ويُفرَز نصّيّاً بترتيبه
   assert.equal(info.timestamp, "2023-11-14 22:13:20Z");
 });
 
+test("UUID v7 يتزايد داخل المللي الواحدة — لا يكفي الطابعُ الزمنيّ", () => {
+  const ms = 1750000000000;
+  const list = Array.from({ length: 50 }, () => uuidV7(ms));
+  assert.equal(new Set(list).size, 50, "معرّفاتٌ مكرّرة");
+  assert.deepEqual([...list].sort(), list, "الفرزُ النصّيُّ يجب أن يطابق ترتيبَ التوليد");
+});
+
 test("فحصُ UUID يرفض المشوّه ويعرف الصفريّ", () => {
   assert.equal(inspectUuid("ليس معرّفاً").valid, false);
   assert.match(inspectUuid("00000000-0000-0000-0000-000000000000").note, /الصفريّ/);
