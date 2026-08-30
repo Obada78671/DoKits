@@ -4,19 +4,48 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { matchIntents } from "@/lib/intents";
 import { searchTools } from "@/lib/search";
-import type { ToolSummary } from "@/tools";
+import type { ToolListing } from "@/tools";
 import { getRecent } from "@/lib/storage";
 import { NamedIcon, SearchIcon } from "@/components/icons";
 
-/** لوحةُ الأوامر: ⌘K أو Ctrl+K في أيّ صفحة، وزرٌّ ثابتٌ على الهاتف */
-export function CommandPalette({ tools }: { tools: ToolSummary[] }) {
+/** ما يحتاجه البحثُ من الفهرس — مجموعةٌ فرعيّةٌ من البطاقة */
+type IndexedTool = Pick<ToolListing,
+  "slug" | "route" | "title" | "description" | "icon" | "categoryId" | "subcategoryId"
+  | "keywords" | "keywordsEn" | "tags" | "status">;
+
+/**
+ * لوحةُ الأوامر: ⌘K أو Ctrl+K في أيّ صفحة، وزرٌّ ثابتٌ على الهاتف.
+ *
+ * الفهرسُ يُجلَب عند أوّل حاجةٍ إليه لا مع كلّ صفحة — فالصفحاتُ كلُّها أخفّ،
+ * والملفُّ يُنزَّل مرّةً ويُخزَّن. ويُستبَق عند خمول المتصفّح كي تكون اللوحةُ
+ * جاهزةً قبل أن تُطلَب.
+ */
+export function CommandPalette() {
   const router = useRouter();
+  const [tools, setTools] = useState<IndexedTool[]>([]);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
   const [recent, setRecent] = useState<string[]>([]);
 
   const bySlug = useMemo(() => new Map(tools.map((t) => [t.slug, t])), [tools]);
+
+  useEffect(() => {
+    let done = false;
+    const load = () => {
+      if (done) return;
+      done = true;
+      fetch("/api/tools-index")
+        .then((r) => (r.ok ? r.json() : []))
+        .then(setTools)
+        .catch(() => { done = false; });
+    };
+    const idle = window.requestIdleCallback?.(load, { timeout: 3000 }) ?? window.setTimeout(load, 1500);
+    return () => {
+      if (window.cancelIdleCallback) window.cancelIdleCallback(idle as number);
+      else clearTimeout(idle as number);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -30,16 +59,20 @@ export function CommandPalette({ tools }: { tools: ToolSummary[] }) {
   }, []);
 
   useEffect(() => {
+    // إن فُتحت قبل أن يصل الفهرسُ فاجلبه فوراً بلا انتظار الخمول
+    if (open && tools.length === 0) {
+      fetch("/api/tools-index").then((r) => (r.ok ? r.json() : [])).then(setTools).catch(() => {});
+    }
     if (open) void getRecent().then((r) => setRecent(r.map((x) => x.slug)));
     else { setQ(""); setActive(0); }
-  }, [open]);
+  }, [open, tools.length]);
 
   const list = useMemo(() => {
     if (!q.trim()) {
-      const rec = recent.map((s) => bySlug.get(s)).filter((t): t is ToolSummary => !!t).slice(0, 6);
+      const rec = recent.map((s) => bySlug.get(s)).filter((t): t is IndexedTool => !!t).slice(0, 6);
       return rec.length > 0 ? rec : tools.slice(0, 6);
     }
-    const intents = matchIntents(q, 2).map((m) => bySlug.get(m.intent.toolSlug)).filter((t): t is ToolSummary => !!t);
+    const intents = matchIntents(q, 2).map((m) => bySlug.get(m.intent.toolSlug)).filter((t): t is IndexedTool => !!t);
     const taken = new Set(intents.map((t) => t.slug));
     return [...intents, ...searchTools(tools, q).map((h) => h.tool).filter((t) => !taken.has(t.slug))].slice(0, 8);
   }, [q, tools, recent, bySlug]);

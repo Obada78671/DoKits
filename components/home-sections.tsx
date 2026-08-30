@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getRecent } from "@/lib/storage";
-import type { ToolSummary } from "@/tools";
+import type { ToolListing } from "@/tools";
 import { NamedIcon } from "@/components/icons";
 
 /** «أكمل ما بدأت» — يظهر فقط لمن له سجلّ، فلا يواجه الزائرُ الجديدُ قسماً فارغاً */
 export function ResumeSection({
   tools, serverRecent,
-}: { tools: ToolSummary[]; serverRecent: { slug: string; at: number }[] }) {
+}: { tools: ToolListing[]; serverRecent: { slug: string; at: number }[] }) {
   const [items, setItems] = useState<{ slug: string; at: number }[]>(serverRecent);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function ResumeSection({
   }, []);
 
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
-  const shown = items.map((r) => bySlug.get(r.slug)).filter((t): t is ToolSummary => !!t);
+  const shown = items.map((r) => bySlug.get(r.slug)).filter((t): t is ToolListing => !!t);
   if (shown.length === 0) return null;
 
   return (
@@ -49,7 +49,7 @@ export function ResumeSection({
 /** اقتراحاتٌ يظهر سببُها دائماً — لا صندوقَ أسودَ يقترح بلا تفسير */
 export function SuggestionsSection({
   suggestions,
-}: { suggestions: { tool: ToolSummary; reason: string }[] }) {
+}: { suggestions: { tool: ToolListing; reason: string }[] }) {
   if (suggestions.length === 0) return null;
   return (
     <section>

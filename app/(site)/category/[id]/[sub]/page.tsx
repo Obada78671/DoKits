@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TOOLS, categoryById, publishedTools, subcategoryName, summarizeAll } from "@/tools";
+import { TOOLS, categoryById, publishedTools, subcategoryName, toListings } from "@/tools";
 import { categoryNames } from "@/lib/db";
 import { NamedIcon } from "@/components/icons";
 
@@ -14,7 +14,7 @@ export async function generateMetadata({
   const def = categoryById(id);
   const subName = subcategoryName(id, sub);
   if (!def || !subName) return { title: "تصنيف غير موجود" };
-  const n = publishedTools(summarizeAll(TOOLS)).filter((t) => t.categoryId === id && t.subcategoryId === sub).length;
+  const n = toListings(publishedTools(TOOLS)).filter((t) => t.categoryId === id && t.subcategoryId === sub).length;
   const title = `أدوات ${subName}`;
   const description = `${n} أداةً عربيّةً في ${subName} ضمن ${def.name} — تعمل في متصفّحك بلا تثبيت.`;
   return {
@@ -34,7 +34,7 @@ export default async function SubcategoryPage({
 
   const names = categoryNames();
   const catName = names[id] ?? def.name;
-  const tools = publishedTools(summarizeAll(TOOLS)).filter((t) => t.categoryId === id && t.subcategoryId === sub);
+  const tools = toListings(publishedTools(TOOLS)).filter((t) => t.categoryId === id && t.subcategoryId === sub);
 
   return (
     <div className="flex flex-col gap-7 pt-10">

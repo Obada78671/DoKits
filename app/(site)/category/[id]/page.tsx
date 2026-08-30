@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TOOLS, categoryById, publishedTools, summarizeAll } from "@/tools";
+import { TOOLS, categoryById, publishedTools, toListings } from "@/tools";
 import { categoryNames } from "@/lib/db";
 import { NamedIcon } from "@/components/icons";
 
@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const def = categoryById(id);
   if (!def) return { title: "تصنيف غير موجود" };
-  const n = publishedTools(summarizeAll(TOOLS)).filter((t) => t.categoryId === id).length;
+  const n = toListings(publishedTools(TOOLS)).filter((t) => t.categoryId === id).length;
   const title = `أدوات ${def.name}`;
   const description = `${n} أداةً عربيّةً في ${def.name} — ${def.blurb} تعمل في متصفّحك بلا تثبيت.`;
   return {
@@ -28,7 +28,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
 
   const names = categoryNames();
   const catName = names[id] ?? def.name;
-  const live = publishedTools(summarizeAll(TOOLS)).filter((t) => t.categoryId === id);
+  const live = toListings(publishedTools(TOOLS)).filter((t) => t.categoryId === id);
   const subs = def.subcategories
     .map((s) => ({ ...s, tools: live.filter((t) => t.subcategoryId === s.id) }))
     .filter((s) => s.tools.length > 0);

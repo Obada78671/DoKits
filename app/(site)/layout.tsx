@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "../globals.css";
 import { Header } from "@/components/header";
 import { CommandPalette } from "@/components/command-palette";
-import { TOOLS, publishedTools, summarizeAll } from "@/tools";
 
 export const metadata: Metadata = {
   title: { default: "Do Kits — ماذا تريد أن تنجز اليوم؟", template: "%s · Do Kits" },
@@ -11,7 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const tools = summarizeAll(publishedTools(TOOLS));
   return (
     <html lang="ar" dir="rtl">
       <body className="flex min-h-dvh flex-col antialiased">
@@ -25,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="mx-2">·</span>
           كلُّ الحساب في متصفّحك
         </footer>
-        <CommandPalette tools={tools} />
+        <CommandPalette />
       </body>
     </html>
   );

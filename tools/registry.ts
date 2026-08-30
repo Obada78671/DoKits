@@ -45,6 +45,12 @@ export type ToolSeo = {
 
 export type ToolFaq = { q: string; a: string };
 
+/** جدولُ أمثلةٍ مرجعيّ: قيمٌ شائعةٌ محسوبةٌ سلفاً يقرؤها الزائرُ بلا إدخال */
+export type ToolExamples = { caption?: string; columns: string[]; rows: string[][] };
+
+/** فصلُ شرحٍ مطوّل — يجيب عن «لماذا» لا «كيف» */
+export type ToolSection = { heading: string; body: string };
+
 export type ToolManifest = {
   id: string;
   slug: string;
@@ -81,7 +87,14 @@ export type ToolManifest = {
   updatedAt?: string;
 
   instructions?: string;
+  /** خطواتٌ مرقّمةٌ: ماذا يفعل المستخدمُ بيده، بالترتيب */
+  useSteps?: string[];
+  examples?: ToolExamples;
   howItWorks?: string[];
+  /** فصولٌ تشرح الخلفيّةَ والفروقَ والمزالق */
+  deepDive?: ToolSection[];
+  /** تنبيهُ حدودٍ يظهر تحت الأداة مباشرةً — لما نتيجتُه تقديرٌ لا حكمٌ قاطع */
+  caveat?: string;
   faq?: ToolFaq[];
 
   load: () => Promise<{ default: ComponentType }>;
@@ -113,7 +126,11 @@ export type ToolInput = {
   publishedAt?: string;
   updatedAt?: string;
   instructions?: string;
+  useSteps?: string[];
+  examples?: ToolExamples;
   howItWorks?: string[];
+  deepDive?: ToolSection[];
+  caveat?: string;
   faq?: ToolFaq[];
   load: () => Promise<{ default: ComponentType }>;
 };
@@ -163,7 +180,11 @@ export function defineTool(t: ToolInput): ToolManifest {
     publishedAt: t.publishedAt,
     updatedAt: t.updatedAt,
     instructions: t.instructions,
+    useSteps: t.useSteps,
+    examples: t.examples,
     howItWorks: t.howItWorks,
+    deepDive: t.deepDive,
+    caveat: t.caveat,
     faq: t.faq,
     load: t.load,
   };
@@ -181,6 +202,50 @@ export function summarize(t: ToolManifest): ToolSummary {
 }
 
 export const summarizeAll = (all: ToolManifest[]): ToolSummary[] => all.map(summarize);
+
+/**
+ * البطاقة — ما تحتاجه القوائمُ والبحثُ فقط، وهذا **وحدَه** ما يعبر إلى العميل.
+ *
+ * البيانُ الكامل يحمل الشروحَ والأسئلةَ والخطواتِ وseo، وكلُّه يُسلسَل مرّتين
+ * (في HTML وفي حمولة RSC) لو مرّ إلى مكوّنِ عميل. وبحثُ الترويسة يستقبل كلَّ
+ * الأدوات في **كلّ صفحة**، فالفرقُ يضرب في عدد الأدوات وفي عدد الصفحات معاً.
+ * والحجمُ ليس مسألةَ بايتاتٍ وحدَه: تجاوزُ حدِّ progressiveChunkSize يجعل React
+ * تؤجّل حدودَ Suspense فتصل بلا ترطيب — وهو عطبٌ صامتٌ وقعنا فيه في v0.10.0.
+ */
+export type ToolListing = {
+  id: string;
+  slug: string;
+  route: string;
+  title: Localized;
+  description: Localized;
+  categoryId: string;
+  subcategoryId?: string;
+  icon: string;
+  tags: string[];
+  keywords: string[];
+  keywordsEn: string[];
+  status: ToolStatus;
+  complexity: Complexity;
+  /** صغيران لكنّ الدليل يرشّح بهما ويفرز — فيبقيان في البطاقة */
+  capabilities: ToolCapabilities;
+  publishedAt?: string;
+  /** يحسب في المتصفّح — تحتاجه شارةُ الخصوصيّة في القوائم */
+  local: boolean;
+};
+
+export function toListing(t: ToolManifest | ToolSummary): ToolListing {
+  return {
+    id: t.id, slug: t.slug, route: t.route,
+    title: t.title, description: t.description,
+    categoryId: t.categoryId, subcategoryId: t.subcategoryId,
+    icon: t.icon, tags: t.tags, keywords: t.keywords, keywordsEn: t.keywordsEn,
+    status: t.status, complexity: t.complexity,
+    capabilities: t.capabilities, publishedAt: t.publishedAt,
+    local: t.privacy.processing === "local",
+  };
+}
+
+export const toListings = (all: (ToolManifest | ToolSummary)[]): ToolListing[] => all.map(toListing);
 
 /* ————— واجهةُ الأداة الداخليّة (SDK) ————— */
 
@@ -210,10 +275,11 @@ export const fail = (...errors: ValidationIssue[]): ValidationResult => ({ ok: f
 /* ————— استعلاماتُ السجلّ ————— */
 
 /** المعروضُ للعامّة: منشورٌ أو تجريبيّ */
-export const isLive = (t: ToolSummary) => t.status === "published" || t.status === "beta";
+/** القيودُ أدناه على الحدّ الأدنى من الحقول، فتعمل على البيان وعلى البطاقة معاً */
+export const isLive = (t: { status: ToolStatus }) => t.status === "published" || t.status === "beta";
 export const isIndexable = (t: ToolSummary) => t.status === "published" && !t.seo.noIndex;
 
-export function publishedTools<T extends ToolSummary>(all: T[]): T[] {
+export function publishedTools<T extends { status: ToolStatus }>(all: T[]): T[] {
   return all.filter(isLive);
 }
 
@@ -227,7 +293,9 @@ export type CategoryCount = {
 };
 
 /** العددُ يُشتقّ من السجلّ — لا يُكتب في مكانٍ ثانٍ فيتقادم */
-export function categoryCounts(all: ToolSummary[]): CategoryCount[] {
+type Categorised = { status: ToolStatus; categoryId: string; subcategoryId?: string };
+
+export function categoryCounts(all: Categorised[]): CategoryCount[] {
   const live = publishedTools(all);
   return CATEGORY_IDS.map((id) => {
     const def = categoryById(id)!;
@@ -244,11 +312,13 @@ export function categoryCounts(all: ToolSummary[]): CategoryCount[] {
 }
 
 /** الصلاتُ المُعلَنةُ أوّلاً، ثمّ التصنيفُ الفرعيّ، ثمّ الوسومُ والكلمات، ثمّ التصنيف */
-export function relatedTools<T extends ToolSummary>(all: T[], tool: ToolSummary, limit = 4): T[] {
+type Relatable = { id: string; slug: string; status: ToolStatus; categoryId: string; subcategoryId?: string; keywords: string[]; tags: string[]; title: Localized; relatedToolIds?: string[] };
+
+export function relatedTools<T extends Relatable>(all: T[], tool: Relatable, limit = 4): T[] {
   const live = publishedTools(all).filter((t) => t.slug !== tool.slug);
   const declared = new Set(tool.relatedToolIds ?? []);
   const kw = new Set([...tool.keywords, ...tool.tags]);
-  const score = (t: ToolSummary) => {
+  const score = (t: Relatable) => {
     let s = declared.has(t.id) ? 100 : 0;
     if (t.categoryId === tool.categoryId) s += 2;
     if (tool.subcategoryId && t.subcategoryId === tool.subcategoryId) s += 4;

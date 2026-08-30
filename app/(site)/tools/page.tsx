@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TOOLS, publishedTools, summarizeAll } from "@/tools";
+import { TOOLS, publishedTools, toListings } from "@/tools";
 import { categoryNames, favoriteSlugs, popularity } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { ToolDirectory } from "@/components/tool-directory";
@@ -7,7 +7,7 @@ import { ToolDirectory } from "@/components/tool-directory";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const n = publishedTools(summarizeAll(TOOLS)).length;
+  const n = toListings(publishedTools(TOOLS)).length;
   const description = `دليلُ ${n} أداةً عربيّةً مصنّفةً حسب الاختصاص — تصفية بالتصنيف والتعقيد والمزايا، وكلُّها تعمل في متصفّحك.`;
   return {
     title: "دليل الأدوات",
@@ -26,7 +26,7 @@ export default async function ToolsDirectoryPage() {
         <p className="mt-1.5 text-muted">صفِّ بالتصنيف والتعقيد والمزايا، ورتّب كما يناسبك.</p>
       </header>
       <ToolDirectory
-        tools={summarizeAll(publishedTools(TOOLS))}
+        tools={toListings(publishedTools(TOOLS))}
         categoryNames={categoryNames()}
         serverFavorites={user ? favoriteSlugs(user.id) : []}
         popularity={popularity()}

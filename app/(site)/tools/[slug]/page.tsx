@@ -8,6 +8,10 @@ import { categoryNames } from "@/lib/db";
 import { track } from "@/lib/analytics";
 import { NamedIcon } from "@/components/icons";
 import { ToolFrame } from "@/components/tool-frame";
+import { ToolFavorite } from "@/components/tool-header-actions";
+import { EmbedSnippet } from "@/components/embed-snippet";
+import { getUser } from "@/lib/auth";
+import { favoriteSlugs } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +49,8 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
 
   track("view", tool.slug);
 
+  const user = await getUser();
+  const isFav = user ? favoriteSlugs(user.id).includes(tool.slug) : false;
   const names = categoryNames();
   const catDef = categoryById(tool.categoryId);
   const catName = names[tool.categoryId] ?? catDef?.name ?? tool.categoryId;
@@ -127,6 +133,9 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           {tool.tags.slice(0, 4).map((tag) => (
             <span key={tag} className="rounded-full border border-line px-2.5 py-1 text-muted">{tag}</span>
           ))}
+          <span className="ms-auto">
+            <ToolFavorite slug={tool.slug} initial={isFav} loggedIn={!!user} />
+          </span>
         </div>
       </header>
 
@@ -140,6 +149,59 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           <Tool />
         </ToolFrame>
       </div>
+
+      {tool.caveat && (
+        <p className="rounded-m border border-line bg-surface2 px-5 py-3.5 text-[0.9rem] leading-relaxed text-muted">
+          {tool.caveat}
+        </p>
+      )}
+
+      {tool.useSteps && tool.useSteps.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-bold">كيف تستعملها</h2>
+          <ol className="flex flex-col gap-2.5">
+            {tool.useSteps.map((step, i) => (
+              <li key={i} className="flex gap-3 text-[0.94rem] leading-relaxed text-muted">
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary-soft font-mono text-[0.76rem] font-bold text-primary">
+                  {i + 1}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {tool.examples && tool.examples.rows.length > 0 && (
+        <section>
+          <h2 className="mb-1 text-lg font-bold">أمثلةٌ جاهزة</h2>
+          {tool.examples.caption && (
+            <p className="mb-3 text-[0.9rem] text-muted">{tool.examples.caption}</p>
+          )}
+          <div className="overflow-x-auto rounded-m border border-line bg-surface">
+            <table className="w-full min-w-[22rem] text-[0.9rem]">
+              <thead className="bg-surface2 text-[0.76rem] text-muted">
+                <tr>
+                  {tool.examples.columns.map((c) => (
+                    <th key={c} className="px-4 py-2.5 text-start font-bold">{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tool.examples.rows.map((row, i) => (
+                  <tr key={i} className="border-t border-line">
+                    {row.map((cell, j) => (
+                      <td key={j} dir="auto" className={`px-4 py-2 ${j === 0 ? "font-medium text-ink" : "font-mono text-[0.86rem] tabular-nums"}`}>
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {tool.howItWorks && tool.howItWorks.length > 0 && (
         <section>
@@ -155,6 +217,17 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
         </section>
       )}
 
+      {tool.deepDive && tool.deepDive.length > 0 && (
+        <div className="flex flex-col gap-6">
+          {tool.deepDive.map((sec) => (
+            <section key={sec.heading}>
+              <h2 className="mb-2 text-lg font-bold">{sec.heading}</h2>
+              <p className="max-w-[68ch] text-[0.95rem] leading-loose text-muted">{sec.body}</p>
+            </section>
+          ))}
+        </div>
+      )}
+
       {tool.faq && tool.faq.length > 0 && (
         <section>
           <h2 className="mb-3 text-lg font-bold">أسئلةٌ شائعة</h2>
@@ -168,6 +241,8 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           </div>
         </section>
       )}
+
+      <EmbedSnippet base={BASE} slug={tool.slug} title={tool.title.ar} />
 
       {related.length === 0 ? (
         <section className="rounded-m border border-line bg-surface2 px-5 py-4">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EXAMPLE_QUERIES, matchIntents } from "@/lib/intents";
 import { searchTools } from "@/lib/search";
-import type { ToolSummary } from "@/tools";
+import type { ToolListing } from "@/tools";
 import { NamedIcon, SearchIcon } from "@/components/icons";
 
 /**
@@ -14,7 +14,7 @@ import { NamedIcon, SearchIcon } from "@/components/icons";
  */
 export function IntentSearch({
   tools, popularity,
-}: { tools: ToolSummary[]; popularity: Record<string, number> }) {
+}: { tools: ToolListing[]; popularity: Record<string, number> }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -24,7 +24,7 @@ export function IntentSearch({
   const bySlug = useMemo(() => new Map(tools.map((t) => [t.slug, t])), [tools]);
 
   const results = useMemo(() => {
-    if (!q.trim()) return { intents: [], tools: [] as ToolSummary[] };
+    if (!q.trim()) return { intents: [], tools: [] as ToolListing[] };
     const intents = matchIntents(q).filter((m) => bySlug.has(m.intent.toolSlug));
     const taken = new Set(intents.map((i) => i.intent.toolSlug));
     const rest = searchTools(tools, q, { popularity })

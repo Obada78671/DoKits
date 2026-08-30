@@ -98,9 +98,11 @@ export function ChipGroup<T extends string>({
   return (
     <Field label={label} hint={hint}>
       <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
-        {options.map((o) => (
+        {/* المفتاحُ يضمّ الترتيبَ لأنّ قائمتين مشروعتين قد تشتركان في معرّفٍ
+            (بلدان بنسبة الضريبة نفسِها مثلاً) — والمفتاحُ المكرّر يُسقط عنصراً بصمت */}
+        {options.map((o, i) => (
           <button
-            key={o.id}
+            key={`${o.id}-${i}`}
             title={o.title}
             className={`chip ${value === o.id ? "chip-active" : ""}`}
             onClick={() => onChange(o.id)}
@@ -123,9 +125,9 @@ export function ToggleChips<T extends string>({
   return (
     <Field label={label} hint={hint}>
       <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
-        {options.map((o) => (
+        {options.map((o, i) => (
           <button
-            key={o.id}
+            key={`${o.id}-${i}`}
             title={o.title}
             aria-pressed={value.has(o.id)}
             className={`chip ${value.has(o.id) ? "chip-active" : ""}`}

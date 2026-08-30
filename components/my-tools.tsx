@@ -5,18 +5,18 @@ import Link from "next/link";
 import { getLocalFavorites, getRecent, toggleLocalFavorite } from "@/lib/storage";
 import { mergeLocalFavoritesAction } from "@/lib/actions";
 import { ToolCard, type CardTool } from "@/components/tool-card";
-import type { ToolSummary } from "@/tools";
+import type { ToolListing } from "@/tools";
 import { categoryById, subcategoryName } from "@/tools/categories";
 
 type Props = {
-  tools: ToolSummary[];
+  tools: ToolListing[];
   categoryNames: Record<string, string>;
   serverFavorites: string[];
   serverRecent: { slug: string; at: number }[];
   loggedIn: boolean;
 };
 
-const card = (t: ToolSummary, names: Record<string, string>, fav: boolean): CardTool => ({
+const card = (t: ToolListing, names: Record<string, string>, fav: boolean): CardTool => ({
   slug: t.slug, title: t.title.ar, description: t.description.ar, icon: t.icon,
   categoryName: names[t.categoryId] ?? categoryById(t.categoryId)?.name ?? t.categoryId,
   subName: subcategoryName(t.categoryId, t.subcategoryId),
@@ -65,7 +65,7 @@ export function MyTools({ tools, categoryNames, serverFavorites, serverRecent, l
 
   const favSet = new Set(loggedIn ? serverFavorites : localFavs);
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
-  const favTools = [...favSet].map((s) => bySlug.get(s)).filter((t): t is ToolSummary => !!t);
+  const favTools = [...favSet].map((s) => bySlug.get(s)).filter((t): t is ToolListing => !!t);
   const recentTools = recent.map((r) => ({ t: bySlug.get(r.slug), at: r.at })).filter((x) => x.t);
 
   return (

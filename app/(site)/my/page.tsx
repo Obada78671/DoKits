@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TOOLS, publishedTools, summarizeAll } from "@/tools";
+import { TOOLS, publishedTools, toListings } from "@/tools";
 import { categoryNames, favoriteSlugs, recentTools } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { MyTools } from "@/components/my-tools";
@@ -16,7 +16,7 @@ export default async function MyPage() {
         <p className="text-muted">مفضّلتُك وآخرُ ما استعملت — ومن حيث توقّفت.</p>
       </header>
       <MyTools
-        tools={summarizeAll(publishedTools(TOOLS))}
+        tools={toListings(publishedTools(TOOLS))}
         categoryNames={categoryNames()}
         serverFavorites={user ? favoriteSlugs(user.id) : []}
         serverRecent={user ? recentTools(user.id).map((r) => ({ slug: r.tool_slug, at: r.used_at * 1000 })) : []}

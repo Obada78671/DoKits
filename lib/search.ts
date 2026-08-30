@@ -1,4 +1,20 @@
-import { publishedTools, type ToolSummary } from "@/tools/registry";
+import { publishedTools, type ToolStatus } from "@/tools/registry";
+
+/**
+ * ما يحتاجه البحثُ فعلاً — لا البيانُ الكامل.
+ * القيدُ الأدنى يجعل البحثَ يعمل على البطاقة المرسَلة إلى العميل كما يعمل على البيان.
+ */
+export type Searchable = {
+  slug: string;
+  status: ToolStatus;
+  title: { ar: string; en: string };
+  description: { ar: string; en: string };
+  keywords: string[];
+  keywordsEn: string[];
+  tags: string[];
+  categoryId: string;
+  subcategoryId?: string;
+};
 import { categoryById, subcategoryName } from "@/tools/categories";
 
 /**
@@ -58,7 +74,7 @@ export type SearchContext = {
   favorites?: Set<string>;
 };
 
-export type SearchHit<T extends ToolSummary = ToolSummary> = { tool: T; score: number; reason: string };
+export type SearchHit<T extends Searchable = Searchable> = { tool: T; score: number; reason: string };
 
 /** مسافةُ تحريرٍ محدودةٌ بواحد — تكفي خطأً مطبعيّاً ولا تخلط الكلمات */
 function withinOneEdit(a: string, b: string): boolean {
@@ -82,7 +98,7 @@ function fuzzyHit(haystack: string[], term: string): boolean {
 }
 
 /** الترجيح: الاسمُ أوّلاً، ثمّ الكلماتُ المفتاحيّة، ثمّ الوصف، ثمّ التصنيف */
-function scoreTool(t: ToolSummary, q: string): { score: number; reason: string } {
+function scoreTool(t: Searchable, q: string): { score: number; reason: string } {
   const title = normalizeAr(t.title.ar);
   const titleEn = normalizeAr(t.title.en);
   const desc = normalizeAr(t.description.ar);
@@ -102,7 +118,7 @@ function scoreTool(t: ToolSummary, q: string): { score: number; reason: string }
   return { score: 0, reason: "" };
 }
 
-export function searchTools<T extends ToolSummary>(
+export function searchTools<T extends Searchable>(
   all: T[],
   query: string,
   ctx: SearchContext = {},
@@ -161,7 +177,7 @@ export function searchTools<T extends ToolSummary>(
 }
 
 /** ترتيبُ العرض بلا استعلام: المفضّلةُ ثمّ الشائعُ ثمّ ترتيبُ السجلّ */
-export function rankBrowse<T extends ToolSummary>(all: T[], ctx: SearchContext = {}): T[] {
+export function rankBrowse<T extends Searchable>(all: T[], ctx: SearchContext = {}): T[] {
   return publishedTools(all)
     .map((t, i) => ({
       t, i,

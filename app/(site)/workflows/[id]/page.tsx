@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TOOLS, publishedTools, summarizeAll } from "@/tools";
+import { TOOLS, publishedTools, toListings } from "@/tools";
 import { WORKFLOWS, workflowById } from "@/tools/tasks";
 import { NamedIcon } from "@/components/icons";
 
@@ -27,7 +27,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
   const w = workflowById(id);
   if (!w) notFound();
 
-  const bySlug = new Map(summarizeAll(publishedTools(TOOLS)).map((t) => [t.slug, t]));
+  const bySlug = new Map(toListings(publishedTools(TOOLS)).map((t) => [t.slug, t]));
 
   return (
     <div className="flex flex-col gap-7 pt-10">

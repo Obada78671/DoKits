@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CATEGORIES, categoryById, subcategoryName, type ToolSummary } from "@/tools";
+import { CATEGORIES, categoryById, subcategoryName, type ToolListing } from "@/tools";
 import { searchTools } from "@/lib/search";
 import { getLocalFavorites, toggleLocalFavorite } from "@/lib/storage";
 import { NamedIcon, SearchIcon, StarIcon } from "@/components/icons";
@@ -23,7 +23,7 @@ const CAP_FILTERS = [
 export function ToolDirectory({
   tools, categoryNames, serverFavorites, popularity, loggedIn,
 }: {
-  tools: ToolSummary[];
+  tools: ToolListing[];
   categoryNames: Record<string, string>;
   serverFavorites: string[];
   popularity: Record<string, number>;

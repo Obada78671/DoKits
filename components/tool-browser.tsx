@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { rankBrowse, searchTools } from "@/lib/search";
-import { CATEGORIES, categoryById, subcategoryName, type ToolSummary } from "@/tools";
+import { CATEGORIES, categoryById, subcategoryName, type ToolListing } from "@/tools";
 import { getLocalFavorites, toggleLocalFavorite } from "@/lib/storage";
 import { SearchIcon, StarIcon } from "@/components/icons";
 import { ToolCard, type CardTool } from "@/components/tool-card";
@@ -15,7 +15,7 @@ import { ToolCard, type CardTool } from "@/components/tool-card";
 export function ToolBrowser({
   tools, categoryNames, serverFavorites, popularity, loggedIn, initialCategory,
 }: {
-  tools: ToolSummary[];
+  tools: ToolListing[];
   categoryNames: Record<string, string>;
   serverFavorites: string[];
   popularity: Record<string, number>;

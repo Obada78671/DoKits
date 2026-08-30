@@ -7,6 +7,8 @@ import { VAT_RATES, money, num, vat } from "@/tools/finance-lib";
 export default function Vat() {
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("15");
+  // البلدُ حالةٌ مستقلّة: بلدان قد يشتركان في النسبة، والمنتقى واحدٌ منهما لا كلاهما
+  const [country, setCountry] = useState("sa");
   const [mode, setMode] = useState<"add" | "extract">("add");
 
   const a = num(amount);
@@ -29,14 +31,17 @@ export default function Vat() {
           <NumberField id="v-a" value={amount} onChange={setAmount} placeholder="1000" />
         </Field>
         <Field label="النسبة ٪" htmlFor="v-r" className="min-w-28 flex-1">
-          <NumberField id="v-r" value={rate} onChange={setRate} min={0} max={100} step="0.5" />
+          <NumberField id="v-r" value={rate} onChange={(v) => { setRate(v); setCountry(""); }} min={0} max={100} step="0.5" />
         </Field>
       </div>
       <ChipGroup
         label="نسبٌ جاهزة"
-        value={String(r)}
-        onChange={(id) => setRate(id)}
-        options={VAT_RATES.map((c) => ({ id: String(c.rate), label: `${c.name} ${c.rate}٪` }))}
+        value={country}
+        onChange={(id) => {
+          const c = VAT_RATES.find((x) => x.id === id);
+          if (c) { setCountry(id); setRate(String(c.rate)); }
+        }}
+        options={VAT_RATES.map((c) => ({ id: c.id, label: `${c.name} ${c.rate}٪` }))}
       />
       <Tiles
         items={[
