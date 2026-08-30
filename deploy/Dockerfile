@@ -1,6 +1,8 @@
 # بناء متعدّد المراحل — الناتج صورة تشغيل نحيلة (هدف الذاكرة ≤ 200م.ب وفق خطّة المشروع)
 FROM node:22-slim AS build
 WORKDIR /app
+# سقف V8 أثناء البناء — مع سقف docker build الخارجيّ (المادّة ٨ل، دفاع مزدوج)
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
