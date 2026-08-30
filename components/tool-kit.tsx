@@ -202,8 +202,8 @@ export function ErrorNote({ children }: { children: ReactNode }) {
   return <p role="alert" className="form-error">{children}</p>;
 }
 
-export function Note({ children }: { children: ReactNode }) {
-  return <p className="text-[0.84rem] leading-relaxed text-muted">{children}</p>;
+export function Note({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <p className={`text-[0.84rem] leading-relaxed text-muted ${className}`}>{children}</p>;
 }
 
 /** هيكلُ أداةٍ عموديٌّ موحّدُ التباعد */

@@ -149,3 +149,19 @@
   .md-preview blockquote { @apply my-3 border-s-4 border-primary ps-4 text-muted; }
   .md-preview hr { @apply my-5 border-line; }
 }
+
+/* الطباعة: تبقى ورقةُ الفاتورة وحدها، بلا قشرةٍ ولا حقولِ إدخال */
+@media print {
+  header, footer, nav { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  main { max-width: none !important; padding: 0 !important; }
+  .invoice-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    padding: 0 !important;
+  }
+  .invoice-sheet :is(th, td, dt, dd, p) { color: #000 !important; }
+  .invoice-sheet :is(.border-line, table, tr) { border-color: #999 !important; }
+}

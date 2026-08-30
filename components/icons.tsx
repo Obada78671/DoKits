@@ -46,6 +46,36 @@ const MAP: Record<string, (p: P) => React.ReactElement> = {
   design: (p) => (
     <svg {...base(p.size, p)}><path d="m13 3 8 8-9.5 9.5H3v-8.5z" /><path d="m10.5 6.5 7 7" /></svg>
   ),
+  receipt: (p) => (
+    <svg {...base(p.size, p)}><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2zM9 8h6M9 12h6" /></svg>
+  ),
+  percent: (p) => (
+    <svg {...base(p.size, p)}><path d="m5 19 14-14" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></svg>
+  ),
+  tag: (p) => (
+    <svg {...base(p.size, p)}><path d="M3 12V4h8l9 9-8 8z" /><circle cx="7.5" cy="7.5" r="1.2" /></svg>
+  ),
+  scissors: (p) => (
+    <svg {...base(p.size, p)}><circle cx="6" cy="7" r="2.5" /><circle cx="6" cy="17" r="2.5" /><path d="M20 4 8.5 15.5M20 20 8.5 8.5" /></svg>
+  ),
+  clock: (p) => (
+    <svg {...base(p.size, p)}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+  ),
+  users: (p) => (
+    <svg {...base(p.size, p)}><circle cx="9" cy="8" r="3" /><path d="M3 20a6 6 0 0 1 12 0M17 5.5a3 3 0 0 1 0 5M18 20a5.5 5.5 0 0 0-2-4.3" /></svg>
+  ),
+  bank: (p) => (
+    <svg {...base(p.size, p)}><path d="M3 10 12 4l9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18" /></svg>
+  ),
+  loan: (p) => (
+    <svg {...base(p.size, p)}><rect x="2" y="6" width="20" height="13" rx="3" /><circle cx="12" cy="12.5" r="2.5" /><path d="M6 12.5h.01M18 12.5h.01" /></svg>
+  ),
+  crescent: (p) => (
+    <svg {...base(p.size, p)}><path d="M20 15.5A8.5 8.5 0 1 1 10.5 4a6.6 6.6 0 0 0 9.5 11.5z" /></svg>
+  ),
+  award: (p) => (
+    <svg {...base(p.size, p)}><circle cx="12" cy="9" r="5.5" /><path d="m8.5 13.5-1.5 7 5-2.5 5 2.5-1.5-7" /></svg>
+  ),
   eraser: (p) => (
     <svg {...base(p.size, p)}><path d="m5 15 7-7 6 6-5 5H8zM4 21h16" /></svg>
   ),
