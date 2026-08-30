@@ -46,6 +46,36 @@ const MAP: Record<string, (p: P) => React.ReactElement> = {
   design: (p) => (
     <svg {...base(p.size, p)}><path d="m13 3 8 8-9.5 9.5H3v-8.5z" /><path d="m10.5 6.5 7 7" /></svg>
   ),
+  ruler: (p) => (
+    <svg {...base(p.size, p)}><rect x="2" y="8" width="20" height="8" rx="2" /><path d="M7 8v3M11 8v4M15 8v3M19 8v4" /></svg>
+  ),
+  calendarDiff: (p) => (
+    <svg {...base(p.size, p)}><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18M8 15h8M12 13v4" /></svg>
+  ),
+  cake: (p) => (
+    <svg {...base(p.size, p)}><path d="M4 21h16v-7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3zM12 8V5M9 8V6M15 8V6M4 16h16" /></svg>
+  ),
+  briefcase: (p) => (
+    <svg {...base(p.size, p)}><rect x="2" y="7" width="20" height="13" rx="3" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M2 13h20" /></svg>
+  ),
+  globe: (p) => (
+    <svg {...base(p.size, p)}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z" /></svg>
+  ),
+  drive: (p) => (
+    <svg {...base(p.size, p)}><rect x="2" y="6" width="20" height="12" rx="3" /><path d="M6 12h.01M2 12h20" /></svg>
+  ),
+  binary: (p) => (
+    <svg {...base(p.size, p)}><rect x="4" y="3" width="6" height="8" rx="3" /><rect x="14" y="13" width="6" height="8" rx="3" /><path d="M14 3h3v8M4 13h3v8" /></svg>
+  ),
+  pin: (p) => (
+    <svg {...base(p.size, p)}><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+  ),
+  shirt: (p) => (
+    <svg {...base(p.size, p)}><path d="M8 3 4 6l2 3 1-.7V21h10V8.3l1 .7 2-3-4-3-2 2h-4z" /></svg>
+  ),
+  mosque: (p) => (
+    <svg {...base(p.size, p)}><path d="M12 3c2.5 2 4 3.6 4 5.5 0 1.4-1 2.5-4 2.5s-4-1.1-4-2.5C8 6.6 9.5 5 12 3zM4 21v-7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v7M4 21h16M10 21v-4a2 2 0 0 1 4 0v4" /></svg>
+  ),
   receipt: (p) => (
     <svg {...base(p.size, p)}><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2zM9 8h6M9 12h6" /></svg>
   ),

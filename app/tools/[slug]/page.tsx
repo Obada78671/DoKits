@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import {
   TOOLS, categoryById, isLive, relatedTools, subcategoryName, summarize, toolBySlug,
 } from "@/tools";
@@ -35,14 +34,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-function ToolSkeleton() {
-  return (
-    <div className="flex flex-col gap-3" aria-busy="true" aria-label="جارٍ تحميل الأداة">
-      <div className="h-11 animate-pulse rounded-s bg-surface2" />
-      <div className="h-32 animate-pulse rounded-m bg-surface2" />
-    </div>
-  );
-}
+/* بلا حدِّ Suspense هنا عن قصد: الوحدةُ مُنتظَرةٌ على الخادم قبل الرسم، فالهيكلُ لا يظهر أبداً.
+   ووجودُ الحدّ كان يسمح لـReact بتأجيل محتوى الأداة إلى بثٍّ لاحقٍ متى تجاوزت الصفحةُ
+   حدَّ progressiveChunkSize (~٩٦ ك.ب) — وذلك المحتوى المؤجَّل كان يصل بلا ترطيب، فتموت الأداة. */
 
 export default async function ToolPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -143,9 +137,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           instructions={tool.instructions}
           capabilities={tool.capabilities}
         >
-          <Suspense fallback={<ToolSkeleton />}>
-            <Tool />
-          </Suspense>
+          <Tool />
         </ToolFrame>
       </div>
 
