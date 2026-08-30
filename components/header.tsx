@@ -21,7 +21,8 @@ export async function Header({ lang = "ar" }: { lang?: Lang }) {
         </Link>
         <nav className="me-auto flex items-center gap-2 text-[0.92rem]">
           <Link href={p("/tools")} className="btn btn-ghost !py-1.5">{t.nav.tools}</Link>
-          <Link href={p("/my")} className="btn btn-ghost !py-1.5">{t.nav.board}</Link>
+          {/* «لوحتي» والحسابُ عربيّان بعد — ولا يُعرَض في الإنجليزيّة رابطٌ إلى صفحةٍ عربيّة */}
+          {lang === "ar" && <Link href={p("/my")} className="btn btn-ghost !py-1.5">{t.nav.board}</Link>}
           {user?.role === "admin" && (
             <Link href="/admin/categories" className="btn btn-ghost !py-1.5">التصنيفات</Link>
           )}
@@ -35,7 +36,7 @@ export async function Header({ lang = "ar" }: { lang?: Lang }) {
         >
           {t.switchTo}
         </Link>
-        {user ? (
+        {lang === "en" ? null : user ? (
           <div className="flex items-center gap-2">
             <Link href={p("/account")} className="btn btn-ghost !py-1.5">
               {user.username}
