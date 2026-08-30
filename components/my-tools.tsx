@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLocalFavorites, getRecent, toggleLocalFavorite } from "@/lib/storage";
+import { getLocalFavorites, getRecent, listDrafts, removeDraft, toggleLocalFavorite, type DraftEntry } from "@/lib/storage";
 import { mergeLocalFavoritesAction } from "@/lib/actions";
 import { ToolCard, type CardTool } from "@/components/tool-card";
 import type { ToolListing } from "@/tools";
@@ -36,6 +36,9 @@ export function MyTools({ tools, categoryNames, serverFavorites, serverRecent, l
   const [localFavs, setLocalFavs] = useState<string[]>([]);
   const [recent, setRecent] = useState<{ slug: string; at: number }[]>(serverRecent);
   const [merged, setMerged] = useState<number | null>(null);
+  const [drafts, setDrafts] = useState<DraftEntry[]>([]);
+
+  useEffect(() => { void listDrafts().then(setDrafts); }, []);
 
   useEffect(() => {
     void getLocalFavorites().then(setLocalFavs);
@@ -72,6 +75,34 @@ export function MyTools({ tools, categoryNames, serverFavorites, serverRecent, l
     <div className="flex flex-col gap-8">
       {merged !== null && merged > 0 && (
         <p role="status" className="form-ok">نُقلت {merged} أداةً من مفضّلة هذا المتصفّح إلى حسابك.</p>
+      )}
+
+      {drafts.length > 0 && (
+        <section>
+          <h2 className="mb-1 text-lg font-bold">مسودّاتُك <span className="text-muted">{drafts.length}</span></h2>
+          <p className="mb-3 text-[0.9rem] text-muted">
+            محفوظةٌ في هذا الجهاز وحدَه — افتح الأداةَ واضغط «استعِدها».
+          </p>
+          <ul className="divide-y divide-line rounded-m border border-line bg-surface">
+            {drafts.map((d) => {
+              const t = bySlug.get(d.slug);
+              return (
+                <li key={d.slug} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
+                  <Link href={`/tools/${d.slug}`} className="font-medium text-ink hover:text-primary">
+                    {t?.title.ar ?? d.slug}
+                  </Link>
+                  <span className="text-[0.82rem] text-muted">{when(d.at)}</span>
+                  <button
+                    className="btn btn-ghost !px-3 !py-1 !text-[0.8rem] ms-auto"
+                    onClick={() => void removeDraft(d.slug).then(() => setDrafts((p) => p.filter((x) => x.slug !== d.slug)))}
+                  >
+                    احذف
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       <section>

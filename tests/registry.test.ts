@@ -238,3 +238,63 @@ test("البحثُ يتسامح مع خطأٍ مطبعيٍّ واحد", () => {
   assert.equal(searchTools(TOOLS, "الزكاه")[0]?.tool.slug, "zakat");
   assert.ok(searchTools(TOOLS, "فاتوره").length > 0);
 });
+
+/**
+ * خريطةُ النقل بين الأدوات تشير إلى معرّفات حقولٍ حقيقيّة.
+ *
+ * وهذا أخطرُ ما في طبقة «تابع»: معرّفٌ خطأٌ لا يرمي خطأً ولا يُرى في المراجعة،
+ * بل يصمت — فينتقل المستخدمُ إلى الأداة التالية ويجدها فارغةً بلا سبب. أو
+ * أسوأ: يُعاد تسميةُ حقلٍ فتنكسر السلسلةُ بصمتٍ بعد أشهر.
+ */
+test("خرائطُ نقل القيم تشير إلى حقولٍ موجودة", () => {
+  const idsOf = (slug: string): Set<string> => {
+    const src = fs.readFileSync(path.join(ROOT, "tools", slug, "tool.tsx"), "utf8");
+    return new Set([...src.matchAll(/\bid="([a-zA-Z0-9_-]+)"/g)].map((m) => m[1]));
+  };
+  const cache = new Map<string, Set<string>>();
+  const ids = (slug: string) => {
+    if (!cache.has(slug)) cache.set(slug, idsOf(slug));
+    return cache.get(slug)!;
+  };
+
+  let checked = 0;
+  for (const t of TOOLS) {
+    // المثالُ الجاهزُ يملأ حقولاً بمعرّفاتها — والمعرّفُ الخطأ يُنتج زرّاً لا يفعل شيئاً
+    for (const id of Object.keys(t.demo?.fields ?? {})) {
+      assert.ok(ids(t.slug).has(id), `${t.slug}: مثالٌ جاهزٌ يملأ حقلاً غيرَ موجود «${id}»`);
+      checked++;
+    }
+    for (const step of t.nextSteps ?? []) {
+      if (!step.carry) continue;
+      for (const [from, to] of Object.entries(step.carry)) {
+        assert.ok(ids(t.slug).has(from), `${t.slug}: لا حقلَ بالمعرّف «${from}» يُنقَل منه`);
+        assert.ok(ids(step.slug).has(to), `${t.slug} ← ${step.slug}: لا حقلَ بالمعرّف «${to}» يُنقَل إليه`);
+        checked++;
+      }
+    }
+  }
+  assert.ok(checked > 0, "لا خرائطَ نقلٍ أصلاً — هل حُذفت؟");
+});
+
+/**
+ * قوائمُ الكلمات المهمَلة تُطبَّع كما يُطبَّع الاستعلام.
+ *
+ * كانت «إلى» مكتوبةً في القائمة بلا تطبيع، فتنجو من الحذف بعد أن يحوّلها
+ * التطبيعُ إلى «الي» — فتُحسَب كلمةً حاملةً للمعنى. وأثرُها أنّ «حوّل تاريخاً
+ * هجريّاً إلى ميلاديّ» كانت تقترح أداةَ Base64 لاشتراك «حول» و«الي».
+ */
+test("النيّةُ تعطي أداةً واحدةً صحيحة لأسئلةٍ كاملة", async () => {
+  const { matchIntents } = await import("../lib/intents.ts");
+  const cases: [string, string][] = [
+    ["حوّل تاريخاً هجريّاً إلى ميلاديّ", "hijri-gregorian"],
+    ["أريد معرفة سعر بيع مناسب", "pricing"],
+    ["كم ضريبة هذه الفاتورة؟", "vat"],
+    ["حوّل هذا النصّ إلى base64", "base64"],
+    ["أريد كلمة مرور قوية", "password-gen"],
+  ];
+  for (const [q, slug] of cases) {
+    const hits = matchIntents(q, 4);
+    assert.equal(hits[0]?.intent.toolSlug, slug, `«${q}»: الأولى يجب أن تكون ${slug}`);
+    assert.ok(hits.length <= 2, `«${q}»: ${hits.length} نيّاتٍ — ضجيجٌ في الاقتراح`);
+  }
+});

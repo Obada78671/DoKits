@@ -68,6 +68,15 @@ export function expandTerm(term: string): string[] {
   return SYNONYMS.get(term) ?? [term];
 }
 
+/** أفعالُ الطلب وأدواتُه: تُقال في كلّ سؤالٍ ولا تدلّ على أداة */
+const ASK_WORDS = new Set([
+  "اريد", "ابغى", "ابي", "بدي", "بدنا", "عايز", "عاوز", "ودي", "احتاج", "محتاج",
+  "كيف", "شلون", "وش", "ما", "ماذا", "هل", "كم", "لو", "سمحت", "ممكن", "من", "في",
+  "على", "الى", "عن", "مع", "هذا", "هذه", "هو", "هي", "ان", "الذي", "التي",
+  "please", "want", "need", "how", "to", "the", "a", "my", "i",
+  // تُطبَّع كما يُطبَّع الاستعلام: «إلى» ← «الي»، وإلّا نجت من الحذف
+].map(normalizeAr));
+
 export type SearchContext = {
   /** عددُ الزيارات لكلّ أداة — يرجّح الشائع عند تساوي التطابق */
   popularity?: Record<string, number>;
@@ -149,8 +158,16 @@ export function searchTools<T extends Searchable>(
     }
   }
 
-  // وإلّا فكلُّ كلمةٍ يجب أن تجد موضعاً — بحثٌ تقاطعيٌّ لا اتّحاديّ
-  const terms = q.split(" ").filter(Boolean);
+  /**
+   * كلماتُ الطلب تُطرح قبل التقاطع.
+   *
+   * الصفحةُ تدعو المستخدمَ إلى جملةٍ كاملة («اكتب ما تريد إنجازه»)، والبحثُ
+   * تقاطعيٌّ يشترط أن تجد كلُّ كلمةٍ موضعاً — فكانت «أريد تنظيف نصّ» تعطي
+   * صفراً لأنّ «أريد» لا تطابق أداةً. وطرحُها يبقي التقاطعَ صارماً على
+   * الكلمات الحاملةِ للمعنى وحدَها. وإن لم يبقَ شيءٌ رجعنا إلى الأصل.
+   */
+  const stripped = q.split(" ").filter((w) => w && !ASK_WORDS.has(w));
+  const terms = stripped.length > 0 ? stripped : q.split(" ").filter(Boolean);
   const hits: SearchHit<T>[] = [];
   for (const t of live) {
     let total = 0;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TOOLS, categoryById, publishedTools, toListings } from "@/tools";
+import { TASKS } from "@/tools/tasks";
 import { categoryNames } from "@/lib/db";
 import { NamedIcon } from "@/components/icons";
 
@@ -33,6 +34,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
     .map((s) => ({ ...s, tools: live.filter((t) => t.subcategoryId === s.id) }))
     .filter((s) => s.tools.length > 0);
   const loose = live.filter((t) => !t.subcategoryId);
+  // «ابدأ من مهمّة»: المهامُّ التي أكثرُ أدواتها في هذا التصنيف
+  const slugs = new Set(live.map((t) => t.slug));
+  const tasks = TASKS
+    .map((t) => ({ task: t, hits: t.tools.filter((s) => slugs.has(s)) }))
+    .filter((x) => x.hits.length >= 2)
+    .slice(0, 3);
 
   return (
     <div className="flex flex-col gap-8 pt-10">
@@ -48,6 +55,31 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
           {def.blurb} <span className="font-medium text-ink">{live.length} أداة</span>، كلُّها تعمل في متصفّحك.
         </p>
       </header>
+
+      {tasks.length > 0 && (
+        <section className="rounded-m border border-line bg-surface2 px-5 py-4">
+          <p className="text-[0.78rem] font-bold tracking-wide text-primary">ابدأ من مهمّة</p>
+          <p className="mt-0.5 text-[0.88rem] text-muted">
+            لا يلزمك أن تعرف اسمَ الأداة — اختر ما تريد إنجازَه.
+          </p>
+          <div className="mt-3 flex flex-col gap-2.5">
+            {tasks.map(({ task, hits }) => (
+              <div key={task.id} className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-ink">{task.title}</span>
+                {hits.map((slug) => {
+                  const t = live.find((x) => x.slug === slug)!;
+                  return (
+                    <Link key={slug} href={t.route}
+                          className="rounded-full border border-line bg-surface px-2.5 py-1 text-[0.78rem] text-muted hover:border-primary hover:text-primary">
+                      {t.title.ar}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {subs.map((s) => (
         <section key={s.id}>

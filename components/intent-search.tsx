@@ -27,9 +27,19 @@ export function IntentSearch({
     if (!q.trim()) return { intents: [], tools: [] as ToolListing[] };
     const intents = matchIntents(q).filter((m) => bySlug.has(m.intent.toolSlug));
     const taken = new Set(intents.map((i) => i.intent.toolSlug));
-    const rest = searchTools(tools, q, { popularity })
+    /**
+     * عتبةُ صلةٍ **للبدائل وحدَها**، لا للجواب.
+     *
+     * تسامحُ البحث مع الأخطاء المطبعيّة نافعٌ في كلمةٍ واحدة، لكنّه في جملةٍ
+     * كاملةٍ يُدخل ضجيجاً. غير أنّ تطبيقَ العتبة على النتائج كلِّها كان يترك
+     * أسئلةً مشروعةً بلا جواب أصلاً — وذلك أسوأُ من بديلٍ ضعيف. فالأفضلُ
+     * يُعرَض مهما كانت درجتُه، والذيلُ وحدَه يُصفّى، والباقي في «كلّ النتائج».
+     */
+    const MIN = 30;
+    const hits = searchTools(tools, q, { popularity }).filter((h) => !taken.has(h.tool.slug));
+    const strong = hits.filter((h) => h.score >= MIN);
+    const rest = (intents.length > 0 || strong.length > 0 ? strong : hits.slice(0, 1))
       .map((h) => h.tool)
-      .filter((t) => !taken.has(t.slug))
       .slice(0, 4);
     return { intents, tools: rest };
   }, [q, tools, popularity, bySlug]);
@@ -53,6 +63,12 @@ export function IntentSearch({
   }, []);
 
   const go = (slug: string) => router.push(`/tools/${slug}`);
+
+  /** «شاهد مثالاً»: نعلّم اللسانَ فتملأ الأداةُ مثالَها فورَ فتحها */
+  const goDemo = (slug: string) => {
+    try { sessionStorage.setItem("dokits:demo", slug); } catch { /* محظور */ }
+    router.push(`/tools/${slug}`);
+  };
 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, flat.length - 1)); }
@@ -107,8 +123,46 @@ export function IntentSearch({
               <Link href="/tools" className="btn btn-ghost mt-3">افتح دليل الأدوات</Link>
             </div>
           ) : (
-            <ul className="divide-y divide-line">
-              {flat.map((item, i) => {
+            <>
+              {(() => {
+                const top = flat[0];
+                const t = bySlug.get(top.slug)!;
+                return (
+                  <div className={`border-b border-line p-4 ${active === 0 ? "bg-surface2" : ""}`}
+                       onMouseEnter={() => setActive(0)}>
+                    <p className="text-[0.72rem] font-bold tracking-wide text-primary">أفضلُ خيارٍ لك</p>
+                    <div className="mt-1.5 flex items-start gap-3">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+                        <NamedIcon name={t.icon} size={22} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[1.05rem] font-bold text-ink">{t.title.ar}</p>
+                        <p className="text-[0.88rem] leading-snug text-muted">{top.answer}</p>
+                        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                          <button className="btn btn-primary !py-1.5" onClick={() => go(top.slug)}>ابدأ الآن</button>
+                          {t.hasDemo && (
+                            <button className="btn btn-ghost !py-1.5" onClick={() => goDemo(top.slug)}>شاهد مثالاً</button>
+                          )}
+                          {top.reason && <span className="text-[0.78rem] text-muted">{top.reason}</span>}
+                          {t.local && (
+                            <span className="ms-auto rounded-full bg-primary-soft px-2.5 py-1 text-[0.72rem] font-bold text-primary">
+                              🔒 على جهازك
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {flat.length > 1 && (
+                <p className="px-4 pt-3 text-[0.74rem] font-bold tracking-wide text-muted">بدائل</p>
+              )}
+
+              <ul className="divide-y divide-line">
+              {flat.slice(1).map((item, idx) => {
+                const i = idx + 1;
                 const t = bySlug.get(item.slug)!;
                 return (
                   <li key={item.slug}>
@@ -142,7 +196,8 @@ export function IntentSearch({
                   عرضُ كلّ النتائج
                 </Link>
               </li>
-            </ul>
+              </ul>
+            </>
           )}
         </div>
       )}

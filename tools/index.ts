@@ -23,6 +23,10 @@ export const TOOLS: ToolManifest[] = [
       "«بلا تشكيل» يحذف الحركاتِ والتطويلَ قبل العدّ — وهو ما يهمّ عند حساب طول النصّ الفعليّ.",
       "زمنُ القراءة على أساس ١٨٠ كلمةً في الدقيقة، وهو متوسّطُ القراءة العربيّة.",
     ],
+    nextSteps: [
+      { slug: "clean-text", label: "نظّف هذا النصّ" },
+      { slug: "word-frequency", label: "اعرف أكثرَ كلماته وروداً" },
+    ],
     load: () => import("@/tools/word-counter/tool"),
   }),
   defineTool({
@@ -84,6 +88,10 @@ export const TOOLS: ToolManifest[] = [
     howItWorks: [
       "«المحارفُ الخفيّة» تشمل الوصلاتِ والعلاماتِ الاتّجاهيّةَ التي لا تُرى وتفسد المطابقة.",
       "«ضبطُ الترقيم» يحذف المسافةَ قبل الفاصلة ويضيفها بعدها.",
+    ],
+    nextSteps: [
+      { slug: "strip-diacritics", label: "جرّده من التشكيل" },
+      { slug: "unicode-inspect", label: "افحص ما بقي فيه من محارفَ خفيّة" },
     ],
     load: () => import("@/tools/clean-text/tool"),
   }),
@@ -186,6 +194,7 @@ export const TOOLS: ToolManifest[] = [
       "المقارنةُ بأطول تسلسلٍ مشترك — فالأسطرُ المنقولةُ تظهر حذفاً وإضافةً لا تعديلاً.",
       "زرُّ النسخ يعطيك الفروقَ بصيغة + و− المعتادة.",
     ],
+    demo: { fields: { "td-a": "السعرُ ١٢٠ ريالاً شاملَ الضريبة", "td-b": "السعرُ ١٣٠ ريالاً شاملَ الضريبة" } },
     load: () => import("@/tools/text-diff/tool"),
   }),
   defineTool({
@@ -201,6 +210,7 @@ export const TOOLS: ToolManifest[] = [
       "يدعم العناوينَ والقوائمَ والاقتباسَ والروابطَ والشيفرةَ والخطَّ الفاصل.",
       "كلُّ ما تكتبه يُهرَّب أوّلاً ثمّ يُنسَّق، فلا يمرّ وسمٌ من نصّك إلى الصفحة.",
     ],
+    demo: { fields: { "md-in": "# عنوان\n\nفقرةٌ فيها **عريض** و*مائل*.\n\n- بند\n- بند" } },
     load: () => import("@/tools/markdown/tool"),
   }),
 
@@ -245,6 +255,7 @@ export const TOOLS: ToolManifest[] = [
         body: "الصيغةُ الكتابيّةُ ليست زينة: هي حمايةٌ من التزوير. رقمٌ مثل ١٠٠ يسهل أن يصير ١٠٠٠ بخطٍّ واحد، أمّا «مئة ليرةٍ لا غير» فلا تُمدّ. ولهذا تُختم العبارةُ بـ«لا غير» أو «فقط»، وتُكتب العملةُ صراحةً — وهو ما تفعله الأداةُ متى اخترت عملة.",
       },
     ],
+    demo: { fields: { "ntw-input": "1250.75" } },
     load: () => import("@/tools/number-to-words/tool"),
   }),
   defineTool({
@@ -287,6 +298,12 @@ export const TOOLS: ToolManifest[] = [
         body: "الحسابُ هنا يقرّب إلى منزلتين عشريّتين، وهو ما تفعله أنظمةُ الفوترة عادةً. لكنّ التقريبَ يجري عندنا على الإجمالي مرّةً واحدة، بينما بعضُ الأنظمة تقرّب كلَّ سطرٍ على حدة ثمّ تجمع — فيختلف المجموعُ بقرشٍ أو قرشين في فاتورةٍ متعدّدة البنود. إن طابقتَ فاتورتَك بنظامٍ محاسبيٍّ ووجدت فرقاً بهذا الحجم، فهذا سببُه لا خطأٌ في أحدهما.",
       },
     ],
+    nextSteps: [
+      { slug: "number-to-words", label: "اكتب المبلغ بالحروف", carry: { "v-a": "ntw-input" } },
+      { slug: "invoice", label: "أنشئ فاتورةً بهذه النسبة", carry: { "v-r": "in-t" } },
+      { slug: "pricing", label: "راجِع هامشَ ربحك" },
+    ],
+    demo: { fields: { "v-a": "1000", "v-r": "15" } },
     load: () => import("@/tools/vat/tool"),
   }),
   defineTool({
@@ -298,6 +315,7 @@ export const TOOLS: ToolManifest[] = [
     keywords: ["نسبة", "مئوية", "زيادة", "نقصان", "تغير", "كم بالمئة"],
     keywordsEn: ["percentage", "percent change", "increase"],
     howItWorks: ["الخانتان تتبدّل تسميتُهما بحسب السؤال المختار، فلا تخلط الجزءَ بالكلّ."],
+    demo: { fields: { "p-a": "45", "p-b": "180" } },
     load: () => import("@/tools/percentage/tool"),
   }),
   defineTool({
@@ -313,6 +331,12 @@ export const TOOLS: ToolManifest[] = [
       "الهامشُ نسبةٌ من سعر البيع، والترميزُ نسبةٌ من التكلفة — والخلطُ بينهما أشهرُ غلطةِ تسعير.",
       "ترميزُ ٢٥٪ على تكلفة ١٠٠ يعطي هامشاً ٢٠٪ لا ٢٥٪.",
     ],
+    nextSteps: [
+      { slug: "vat", label: "أضِف الضريبة على سعر البيع", carry: { "pr-p": "v-a" } },
+      { slug: "discounts", label: "جرّب خصماً على هذا السعر", carry: { "pr-p": "d-p" } },
+      { slug: "invoice", label: "أنشئ فاتورةً بهذه الأرقام" },
+    ],
+    demo: { fields: { "pr-c": "60", "pr-p": "95" }, chips: { "المعطى": [2] } },
     load: () => import("@/tools/pricing/tool"),
   }),
   defineTool({
@@ -324,6 +348,11 @@ export const TOOLS: ToolManifest[] = [
     keywords: ["خصم", "تنزيلات", "عروض", "سعر نهائي", "خصم على خصم"],
     keywordsEn: ["discount", "chained discount", "sale price"],
     howItWorks: ["٢٠٪ ثمّ ١٠٪ تساوي ٢٨٪ لا ٣٠٪، لأنّ الخصمَ الثاني يُحسب على ما بقي."],
+    nextSteps: [
+      { slug: "vat", label: "أضِف الضريبة على السعر النهائيّ" },
+      { slug: "pricing", label: "تحقّق أنّ الخصم لم يأكل ربحك", carry: { "d-p": "pr-p" } },
+    ],
+    demo: { fields: { "d-p": "450", "d-c": "20, 10" } },
     load: () => import("@/tools/discounts/tool"),
   }),
   defineTool({
@@ -336,6 +365,10 @@ export const TOOLS: ToolManifest[] = [
     keywordsEn: ["timesheet", "work hours", "shift"],
     complexity: "medium",
     howItWorks: ["الورديّةُ العابرةُ منتصفَ الليل (٢٢:٠٠ ← ٠٦:٠٠) تُحسب ثماني ساعاتٍ لا سالباً."],
+    nextSteps: [
+      { slug: "invoice", label: "حوّل الساعات إلى فاتورة" },
+      { slug: "end-of-service", label: "احسب مكافأةَ نهاية الخدمة" },
+    ],
     load: () => import("@/tools/timesheet/tool"),
   }),
   defineTool({
@@ -346,6 +379,11 @@ export const TOOLS: ToolManifest[] = [
     category: "business", subcategory: "finance", icon: "users", version: "1.0.0", publishedAt: "2026-08-30",
     keywords: ["تقسيم", "حساب", "مطعم", "إكرامية", "بقشيش", "حصة"],
     keywordsEn: ["split bill", "tip", "share"],
+    nextSteps: [
+      { slug: "percentage", label: "احسب نسبةَ الإكراميّة" },
+      { slug: "vat", label: "افصل الضريبةَ عن الفاتورة", carry: { "sb-t": "v-a" } },
+    ],
+    demo: { fields: { "sb-t": "480", "sb-n": "4", "sb-p": "10" } },
     load: () => import("@/tools/split-bill/tool"),
   }),
   defineTool({
@@ -362,6 +400,7 @@ export const TOOLS: ToolManifest[] = [
       "التحقّقُ يثبت سلامةَ الكتابة لا وجودَ الحساب — فالبنكُ وحده يعرف ذلك.",
       "لا يغادر الرقمُ متصفّحَك.",
     ],
+    demo: { fields: { "ib-in": "SA0380000000608010167519" } },
     load: () => import("@/tools/iban/tool"),
   }),
   defineTool({
@@ -377,6 +416,11 @@ export const TOOLS: ToolManifest[] = [
       "أقساطٌ ثابتةٌ بطريقة التناقص — الفائدةُ على الرصيد المتبقّي لا على أصل المبلغ.",
       "القسطُ الأخير يبتلع فروقَ التقريب فينتهي الرصيدُ صفراً تماماً.",
     ],
+    nextSteps: [
+      { slug: "percentage", label: "احسب نسبةَ القسط من دخلك" },
+      { slug: "number-to-words", label: "اكتب مبلغَ القرض بالحروف", carry: { "l-a": "ntw-input" } },
+    ],
+    demo: { fields: { "l-a": "120000", "l-r": "6.5", "l-m": "60" } },
     load: () => import("@/tools/loan/tool"),
   }),
   defineTool({
@@ -408,6 +452,7 @@ export const TOOLS: ToolManifest[] = [
       "تقديرٌ إرشاديٌّ لا فتوى قانونيّة — الأنظمةُ تتغيّر.",
       "المستحقُّ يختلف بسبب انتهاء الخدمة (استقالةٌ أم إنهاء) وبما يدخل في «الأجر».",
     ],
+    demo: { fields: { "e-w": "8000" } },
     load: () => import("@/tools/end-of-service/tool"),
   }),
   defineTool({
@@ -423,6 +468,10 @@ export const TOOLS: ToolManifest[] = [
     howItWorks: [
       "المعاينةُ هي نفسُها ما يُطبع — لا مفاجأةَ في الورقة.",
       "الطباعةُ تُخفي حقولَ الإدخال وقشرةَ الموقع، و«حفظ PDF» في نافذة الطباعة يعطيك ملفّاً بلا مكتبةٍ إضافيّة.",
+    ],
+    nextSteps: [
+      { slug: "number-to-words", label: "اكتب الإجماليَّ بالحروف" },
+      { slug: "iban", label: "تحقّق من رقم الآيبان قبل الإرسال" },
     ],
     load: () => import("@/tools/invoice/tool"),
   }),
@@ -441,6 +490,10 @@ export const TOOLS: ToolManifest[] = [
       "يبني على تقويم المتصفّح المدمج (ICU) — لا مكتبةَ خارجيّةً ولا جداولَ منسوخة.",
       "أمّ القرى والحسابيّ المدنيّ يختلفان بيومٍ في نحو نصف الأشهر — والخيارُ لك.",
       "التقويمُ حسابيٌّ لا رَصْديّ، وقد يفارق رؤيةَ الهلال المحلّيّة يوماً.",
+    ],
+    nextSteps: [
+      { slug: "date-diff", label: "احسب الفرقَ بين تاريخين" },
+      { slug: "prayer-times", label: "مواقيتُ الصلاة في هذا اليوم" },
     ],
     load: () => import("@/tools/hijri-gregorian/tool"),
   }),
@@ -479,6 +532,11 @@ export const TOOLS: ToolManifest[] = [
         ["100 °م → فهرنهايت", "212 °F"],
       ],
     },
+    nextSteps: [
+      { slug: "number-to-words", label: "اكتب الناتجَ بالحروف" },
+      { slug: "coordinates", label: "حوّل إحداثيّاتٍ جغرافيّة" },
+    ],
+    demo: { fields: { "u-v": "70" } },
     load: () => import("@/tools/units/tool"),
   }),
   defineTool({
@@ -493,6 +551,7 @@ export const TOOLS: ToolManifest[] = [
       "الأشهرُ تُعدّ بالتقويم لا بمتوسّطٍ ثابت: نأخذ أكبرَ عددِ أشهرٍ يبقى ضمن المدّة ثمّ نعدّ الأيّامَ الباقية.",
       "«٣١ كانون الثاني + شهر» تساوي آخرَ شباط بالقصّ — فالمدّةُ بينهما شهرٌ تامّ لا ناقص.",
     ],
+    demo: { fields: { "dd-a": "2026-01-01", "dd-b": "2026-08-30" } },
     load: () => import("@/tools/date-diff/tool"),
   }),
   defineTool({
@@ -671,6 +730,7 @@ export const TOOLS: ToolManifest[] = [
         body: "‏Base64 يعمل على ثلاثة بايتاتٍ يخرجها أربعةَ محارف، فإن لم يقبل الطولُ القسمةَ على ثلاثةٍ حُشي الناتجُ بعلامةِ = أو علامتين. وهذه العلامةُ لها معنًى خاصٌّ في الروابط، كما أنّ + و/ تُفسَّران تفسيراً آخر — لذلك وُضعت صيغةُ Base64URL التي تبدّلهما بـ- و_ وتحذف الحشو. وهي صيغةُ أجزاء JWT، ولهذا لا ترى فيها علامةَ = قطّ.",
       },
     ],
+    demo: { fields: { "b64-in": "حقيبةُ أدواتٍ عربيّة" } },
     load: () => import("@/tools/base64/tool"),
   }),
   defineTool({
@@ -708,6 +768,7 @@ export const TOOLS: ToolManifest[] = [
     faq: [
       { q: "لماذا لا يجد البحثُ اسماً أراه بعيني؟", a: "غالباً بسبب تطويلٍ (ـ) أو مسافةٍ غير فاصلة أو علامةِ اتّجاهٍ ألصقها النسخُ من صفحةِ ويب. ألصق النصَّ هنا واضغط «احذف الخفيّة»." },
     ],
+    demo: { fields: { "uc-in": "عبادة‏ مـــحمد" } },
     load: () => import("@/tools/unicode-inspect/tool"),
   }),
   defineTool({
@@ -725,6 +786,11 @@ export const TOOLS: ToolManifest[] = [
       "ترتيبُ المفاتيح عميقٌ يشمل الكائناتِ المتداخلة، وهو ما يجعل مقارنةَ ملفّين ممكنة.",
       "لا يُرسَل ملفُّك إلى خادم، فلصقُ استجابةٍ فيها بياناتُ عملاءَ آمنٌ هنا.",
     ],
+    nextSteps: [
+      { slug: "csv-json", label: "حوّله إلى CSV" },
+      { slug: "base64", label: "رمّزه بـBase64" },
+    ],
+    demo: { fields: { "jf-in": "{\"name\":\"Do Kits\",\"tools\":53,\"local\":true}" } },
     load: () => import("@/tools/json-format/tool"),
   }),
   defineTool({
@@ -802,6 +868,7 @@ export const TOOLS: ToolManifest[] = [
       ],
     },
     caveat: "المواعيدُ محسوبةٌ بتوقيت جهازك، وخادمُك غالباً بتوقيت UTC — راجع فرقَ المنطقة قبل الاعتماد على الساعة.",
+    demo: { fields: { "cr-in": "0 3 * * 1-5" } },
     load: () => import("@/tools/cron-explain/tool"),
   }),
   defineTool({
@@ -920,6 +987,11 @@ export const TOOLS: ToolManifest[] = [
         ["#12b886", "rgb(18 184 134)", "hsl(162 82% 40%)", "oklch(69.5% 0.143 164.9)"],
       ],
     },
+    nextSteps: [
+      { slug: "contrast", label: "افحص تباينَ هذا اللون" },
+      { slug: "palette", label: "ولّد لوحةً منه" },
+    ],
+    demo: { fields: { "cc-in": "#3366cc" } },
     load: () => import("@/tools/color-convert/tool"),
   }),
   defineTool({
@@ -967,6 +1039,7 @@ export const TOOLS: ToolManifest[] = [
         body: "لو بحثنا عن «أقرب لونٍ يمرّ» في فضاء RGB لخرجنا بلونٍ آخرَ بالكلّيّة — أخضرَ بدل الأزرق مثلاً. أمّا الزحزحةُ في OKLCH فتغيّر الإضاءةَ وتبقي الصبغةَ والتشبّع، فيظل اللونُ الناتجُ من عائلة علامتك التجاريّة. وهذا هو الفرقُ بين أداةٍ تقول «استعمل لوناً آخر» وأداةٍ تقول «استعمل لونَك أغمقَ بهذا القدر».",
       },
     ],
+    demo: { fields: { "ct-fg": "#ffb020", "ct-bg": "#ffffff" } },
     load: () => import("@/tools/contrast/tool"),
   }),
   defineTool({
@@ -985,6 +1058,11 @@ export const TOOLS: ToolManifest[] = [
       "ما خرج من الألوان عن مدى الشاشة يُردّ إليه بخفض التشبّع لا بقصّ القنوات — فتبقى الصبغةُ صحيحةً ويبقى المتتامُّ متتامّاً.",
       "التشبّعُ يخفّ عند طرفَي السُّلَّم كما في سلالم أنظمة التصميم الحقيقيّة، فلا تصير الدرجاتُ الفاتحةُ فاقعة.",
     ],
+    nextSteps: [
+      { slug: "contrast", label: "افحص تباينَ هذه الألوان" },
+      { slug: "gradient", label: "ابنِ تدرّجاً منها" },
+    ],
+    demo: { fields: { "pl-in": "#12b886" } },
     load: () => import("@/tools/palette/tool"),
   }),
   defineTool({
@@ -1026,6 +1104,10 @@ export const TOOLS: ToolManifest[] = [
       { q: "هل تُرفَع صورتي؟", a: "لا. كلُّ العمل على canvas في متصفّحك، والملفُّ الناتج يُبنى محلّيّاً وينزل من الجهاز نفسِه." },
       { q: "لماذا صار الناتجُ أكبرَ من الأصل أحياناً؟", a: "لأنّ الأصلَ مضغوطٌ جيّداً أصلاً وأنت تعيد ترميزَه. متى ظهر ذلك فأبقِ الأصل." },
     ],
+    nextSteps: [
+      { slug: "favicon", label: "اصنع منها أيقونةَ موقع" },
+      { slug: "image-colors", label: "استخرج ألوانَها" },
+    ],
     load: () => import("@/tools/image-resize/tool"),
   }),
   defineTool({
@@ -1044,6 +1126,10 @@ export const TOOLS: ToolManifest[] = [
       "تُصغَّر الصورةُ إلى ١٦٠ بكسلاً للعيّنة، فتبقى النتيجةُ فوريّةً مهما كبر الأصل.",
       "الألوانُ تُجمَع في مكعّباتٍ من ٣٢ درجةً ثمّ تُرتَّب بالتكرار — طريقةٌ حتميّة: الصورةُ نفسُها تعطي اللوحةَ نفسَها دائماً.",
       "البكسلاتُ الشفّافةُ تُتجاهَل، فلا يلوّث الشعارُ ذو الخلفيّة الشفّافة لوحتَه بلونٍ وهميّ.",
+    ],
+    nextSteps: [
+      { slug: "palette", label: "ابنِ سُلَّماً كاملاً من أحد هذه الألوان" },
+      { slug: "contrast", label: "افحص تباينَها مع الأبيض" },
     ],
     load: () => import("@/tools/image-colors/tool"),
   }),

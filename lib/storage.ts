@@ -105,5 +105,24 @@ export async function getDraft<T>(slug: string): Promise<T | null> {
   return storage().get<T>(KEYS.draft(slug));
 }
 export async function setDraft<T>(slug: string, value: T): Promise<void> {
+  if (value === null) return storage().remove(KEYS.draft(slug));
   return storage().set(KEYS.draft(slug), value);
+}
+
+export type DraftEntry = { slug: string; at: number };
+
+/** كلُّ المسودّات المحفوظة — لعرضها في «لوحتي» */
+export async function listDrafts(): Promise<DraftEntry[]> {
+  const keys = await storage().keys("draft:");
+  const out: DraftEntry[] = [];
+  for (const k of keys) {
+    const slug = k.slice("draft:".length);
+    const d = await storage().get<{ at?: number }>(k);
+    if (d && typeof d.at === "number") out.push({ slug, at: d.at });
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+
+export async function removeDraft(slug: string): Promise<void> {
+  return storage().remove(KEYS.draft(slug));
 }

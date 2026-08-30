@@ -51,6 +51,33 @@ export type ToolExamples = { caption?: string; columns: string[]; rows: string[]
 /** فصلُ شرحٍ مطوّل — يجيب عن «لماذا» لا «كيف» */
 export type ToolSection = { heading: string; body: string };
 
+/**
+ * الخطوةُ التالية — ما يفعله المستخدمُ **بعد** ظهور النتيجة.
+ *
+ * وهذه هي طبقةُ «تابع»: أداةٌ تنتهي عند رقمٍ تترك المستخدمَ يبحث من جديد،
+ * وأداةٌ تقول «والآن أنشئ عرضَ سعرٍ بهذه الأرقام» تُكمل عملَه.
+ *
+ * و`carry` خريطةُ نقلٍ صريحة: معرّفُ حقلٍ عندنا ← معرّفُ حقلٍ هناك. صريحةٌ
+ * لأنّ التخمينَ بالاسم يملأ حقلاً بقيمةٍ خطأ، وذلك أسوأُ من ألّا يُملأ شيء.
+ */
+/**
+ * مثالٌ جاهز: معرّفُ حقلٍ ← قيمة.
+ * الحقلُ الفارغُ أوّلَ زيارةٍ يُصمِت المستخدم؛ ومثالٌ واقعيٌّ بنقرةٍ يريه
+ * ما تفعله الأداةُ قبل أن يفكّر فيما يُدخل.
+ */
+export type ToolDemo = {
+  fields: Record<string, string>;
+  /** اسمُ مجموعة الرقاقات ← ترتيبُ ما يُنقَر منها. لازمٌ لأنّ بعضَ الحقول لا
+   *  تُرسَم أصلاً إلّا في وضعٍ بعينه — فملءُ قيمةٍ قبل اختيار الوضع لا يفعل شيئاً. */
+  chips?: Record<string, number[]>;
+};
+
+export type NextStep = {
+  slug: string;
+  label: string;
+  carry?: Record<string, string>;
+};
+
 export type ToolManifest = {
   id: string;
   slug: string;
@@ -95,6 +122,8 @@ export type ToolManifest = {
   deepDive?: ToolSection[];
   /** تنبيهُ حدودٍ يظهر تحت الأداة مباشرةً — لما نتيجتُه تقديرٌ لا حكمٌ قاطع */
   caveat?: string;
+  demo?: ToolDemo;
+  nextSteps?: NextStep[];
   faq?: ToolFaq[];
 
   load: () => Promise<{ default: ComponentType }>;
@@ -131,6 +160,8 @@ export type ToolInput = {
   howItWorks?: string[];
   deepDive?: ToolSection[];
   caveat?: string;
+  demo?: ToolDemo;
+  nextSteps?: NextStep[];
   faq?: ToolFaq[];
   load: () => Promise<{ default: ComponentType }>;
 };
@@ -185,6 +216,8 @@ export function defineTool(t: ToolInput): ToolManifest {
     howItWorks: t.howItWorks,
     deepDive: t.deepDive,
     caveat: t.caveat,
+    demo: t.demo,
+    nextSteps: t.nextSteps,
     faq: t.faq,
     load: t.load,
   };
@@ -231,6 +264,8 @@ export type ToolListing = {
   publishedAt?: string;
   /** يحسب في المتصفّح — تحتاجه شارةُ الخصوصيّة في القوائم */
   local: boolean;
+  /** علمٌ فقط لا القيم: البحثُ يعرض «شاهد مثالاً» متى وُجد */
+  hasDemo: boolean;
 };
 
 export function toListing(t: ToolManifest | ToolSummary): ToolListing {
@@ -242,6 +277,7 @@ export function toListing(t: ToolManifest | ToolSummary): ToolListing {
     status: t.status, complexity: t.complexity,
     capabilities: t.capabilities, publishedAt: t.publishedAt,
     local: t.privacy.processing === "local",
+    hasDemo: !!t.demo && Object.keys(t.demo.fields).length > 0,
   };
 }
 
@@ -355,6 +391,11 @@ export function validateRegistry(all: ToolSummary[]): string[] {
       errors.push(`${t.slug}: تصنيفٌ فرعيٌّ مجهول «${t.subcategoryId}»`);
     }
     if (!/^\d+\.\d+\.\d+$/.test(t.version)) errors.push(`${t.slug}: إصدارٌ غيرُ SemVer`);
+    for (const n of t.nextSteps ?? []) {
+      if (!ids.has(n.slug)) errors.push(`${t.slug}: خطوةٌ تالية إلى أداةٍ غير موجودة «${n.slug}»`);
+      if (n.slug === t.id) errors.push(`${t.slug}: خطوةٌ تالية إلى نفسه`);
+      if (!n.label.trim()) errors.push(`${t.slug}: خطوةٌ تالية بلا نصّ`);
+    }
     for (const r of t.relatedToolIds ?? []) {
       if (!ids.has(r)) errors.push(`${t.slug}: صلةٌ مُعلَنةٌ إلى أداةٍ غير موجودة «${r}»`);
       if (r === t.id) errors.push(`${t.slug}: يعلن صلةً بنفسه`);

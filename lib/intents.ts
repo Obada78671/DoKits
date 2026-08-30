@@ -371,11 +371,16 @@ export const INTENTS: Intent[] = [
 ];
 
 /** كلماتٌ لا تحمل مقصداً — تُطرح قبل الموازنة */
+/**
+ * تُطبَّع كما يُطبَّع الاستعلام، وإلّا نجت منها كلماتٌ بأعيانها:
+ * «إلى» تصير «الي» بعد توحيد الألف والياء، فلا تطابق «الى» المكتوبةَ هنا —
+ * فتُحسَب كلمةً حاملةً للمعنى وتُطابق عباراتٍ لا صلةَ لها بالسؤال.
+ */
 const STOP = new Set([
   "اريد", "ابغى", "ابي", "بدي", "عايز", "عاوز", "ودي", "احتاج", "كيف", "شلون", "وش",
   "ما", "هو", "هي", "من", "في", "على", "الى", "عن", "ان", "هذا", "هذه", "لو", "سمحت",
   "ممكن", "please", "want", "need", "how", "to", "i", "my", "the", "a",
-]);
+].map(normalizeAr));
 
 const tokens = (s: string) =>
   normalizeAr(s).split(/[\s،,.؟?!]+/).filter((w) => w.length > 1 && !STOP.has(w));
@@ -404,8 +409,18 @@ export function matchIntents(query: string, limit = 3): IntentMatch[] {
 
       const shared = pTokens.filter((t) => qTokens.some((q) => q === t || q.includes(t) || t.includes(q)));
       if (shared.length === 0) continue;
+      /**
+       * لا بدّ أن يتحقّق **أكثرُ** العبارة لا بعضُها.
+       *
+       * بلا هذا الشرط تكفي كلمةٌ من عبارةٍ من كلمتين: «أريد معرفة سعر بيع»
+       * كانت تُطابق نيّة «معرف فريد» لأنّ «معرفة» تحتوي «معرف» — فيُقترَح
+       * مولّدُ UUID على من يسأل عن التسعير. والاقتراحُ الغريبُ يُفقد الثقةَ
+       * في الاقتراحات كلِّها، لا في واحدٍ منها.
+       */
+      const ratio = shared.length / pTokens.length;
+      if (ratio < 0.6) continue;
       // نسبةُ ما تحقّق من العبارة، لا عددُ الكلمات وحدَه
-      best = Math.max(best, (shared.length / pTokens.length) * 60 + shared.length * 8);
+      best = Math.max(best, ratio * 60 + shared.length * 8);
     }
     if (best > 0) out.push({ intent, score: best });
   }

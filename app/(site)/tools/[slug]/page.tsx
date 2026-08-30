@@ -145,6 +145,8 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           title={tool.title.ar}
           instructions={tool.instructions}
           capabilities={tool.capabilities}
+          nextSteps={tool.nextSteps}
+          demo={tool.demo}
         >
           <Tool />
         </ToolFrame>
@@ -273,7 +275,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
       <footer className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-4 text-[0.82rem] text-muted">
         <span>
           {local ? "الحسابُ كلُّه في متصفّحك — لا يُرسَل ما تُدخله إلى الخادم." : "بعضُ الحساب يجري على الخادم."}
-          {tool.privacy.storesUserData ? "" : " ولا يُحفظ شيءٌ من مُدخلاتك."}
+          {tool.privacy.storesUserData ? "" : " ولا يُحفظ شيءٌ من مُدخلاتك إلّا إن ضغطتَ «احفظ مسودّة» — وعندها في جهازك وحدَه."}
         </span>
         <span dir="ltr" className="font-mono">v{tool.version}</span>
         <Link href={`/feedback?tool=${tool.slug}`} className="ms-auto font-medium text-primary hover:underline">
