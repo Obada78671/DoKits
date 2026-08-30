@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useLang } from "@/components/lang";
 
 /**
  * عُدّةُ الأدوات المشتركة — ما تكرّره الأدوات يصعد إلى القشرة (القاعدة ٩ من عقد التطبيع).
@@ -8,6 +9,7 @@ import { useState, type ReactNode } from "react";
  */
 
 export function CopyButton({ value, small = true }: { value: string; small?: boolean }) {
+  const en = useLang() === "en";
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     if (!value) return;
@@ -23,7 +25,7 @@ export function CopyButton({ value, small = true }: { value: string; small?: boo
       onClick={copy}
       disabled={!value}
     >
-      {copied ? "نُسخ ✓" : "نسخ"}
+      {copied ? (en ? "Copied ✓" : "نُسخ ✓") : (en ? "Copy" : "نسخ")}
     </button>
   );
 }

@@ -7,14 +7,17 @@ import { EXAMPLE_QUERIES, matchIntents } from "@/lib/intents";
 import { searchTools } from "@/lib/search";
 import type { ToolListing } from "@/tools";
 import { NamedIcon, SearchIcon } from "@/components/icons";
+import { dict, path, type Lang } from "@/lib/i18n";
 
 /**
  * حقلُ البداية: يفهم المقصدَ لا اسمَ الأداة.
  * «كم أربح من المنتج؟» تعطي حاسبةَ التسعير مع سببِ الاقتراح وزرِّ بدءٍ مباشر.
  */
 export function IntentSearch({
-  tools, popularity,
-}: { tools: ToolListing[]; popularity: Record<string, number> }) {
+  tools, popularity, lang = "ar",
+}: { tools: ToolListing[]; popularity: Record<string, number>; lang?: Lang }) {
+  const L = dict(lang).search;
+  const p = (x: string) => path(lang, x);
   const router = useRouter();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -25,7 +28,8 @@ export function IntentSearch({
 
   const results = useMemo(() => {
     if (!q.trim()) return { intents: [], tools: [] as ToolListing[] };
-    const intents = matchIntents(q).filter((m) => bySlug.has(m.intent.toolSlug));
+    // طبقةُ النيّة عربيّةٌ بطبيعتها (عبارات عامّيّة وفصيحة)، والإنجليزيّةُ تعتمد البحثَ بالكلمات
+    const intents = lang === "ar" ? matchIntents(q).filter((m) => bySlug.has(m.intent.toolSlug)) : [];
     const taken = new Set(intents.map((i) => i.intent.toolSlug));
     /**
      * عتبةُ صلةٍ **للبدائل وحدَها**، لا للجواب.
@@ -42,7 +46,7 @@ export function IntentSearch({
       .map((h) => h.tool)
       .slice(0, 4);
     return { intents, tools: rest };
-  }, [q, tools, popularity, bySlug]);
+  }, [q, tools, popularity, bySlug, lang]);
 
   const flat = useMemo(
     () => [
@@ -62,12 +66,12 @@ export function IntentSearch({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const go = (slug: string) => router.push(`/tools/${slug}`);
+  const go = (slug: string) => router.push(p(`/tools/${slug}`));
 
   /** «شاهد مثالاً»: نعلّم اللسانَ فتملأ الأداةُ مثالَها فورَ فتحها */
   const goDemo = (slug: string) => {
     try { sessionStorage.setItem("dokits:demo", slug); } catch { /* محظور */ }
-    router.push(`/tools/${slug}`);
+    router.push(p(`/tools/${slug}`));
   };
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -76,7 +80,7 @@ export function IntentSearch({
     else if (e.key === "Enter") {
       e.preventDefault();
       if (flat[active]) go(flat[active].slug);
-      else if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`);
+      else if (q.trim()) router.push(p(`/search?q=${encodeURIComponent(q.trim())}`));
     } else if (e.key === "Escape") setOpen(false);
   };
 
@@ -89,23 +93,23 @@ export function IntentSearch({
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKey}
-          placeholder="اكتب ما تريد إنجازه…"
-          aria-label="ماذا تريد أن تنجز"
+          placeholder={L.placeholder}
+          aria-label={L.aria}
           aria-expanded={open && flat.length > 0}
           aria-controls="intent-results"
           className="w-full bg-transparent outline-none placeholder:text-muted"
         />
         {q && (
           <button className="btn btn-primary !py-1.5 shrink-0"
-                  onClick={() => (flat[0] ? go(flat[0].slug) : router.push(`/search?q=${encodeURIComponent(q)}`))}>
-            ابدأ
+                  onClick={() => (flat[0] ? go(flat[0].slug) : router.push(p(`/search?q=${encodeURIComponent(q)}`)))}>
+            {L.start}
           </button>
         )}
       </label>
 
       {!q && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {EXAMPLE_QUERIES.map((ex) => (
+          {(L.examples.length ? L.examples : EXAMPLE_QUERIES).map((ex) => (
             <button key={ex} className="chip !text-[0.84rem]" onClick={() => { setQ(ex); setOpen(true); }}>
               {ex}
             </button>
@@ -118,9 +122,9 @@ export function IntentSearch({
              className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-m border border-line bg-surface shadow-card">
           {flat.length === 0 ? (
             <div className="px-4 py-5 text-center">
-              <p className="font-bold text-ink">لم نجد أداةً مطابقة</p>
-              <p className="mt-1 text-[0.9rem] text-muted">جرّب كلماتٍ أقلّ، أو تصفّح الدليل — قد تكون الأداةُ باسمٍ آخر.</p>
-              <Link href="/tools" className="btn btn-ghost mt-3">افتح دليل الأدوات</Link>
+              <p className="font-bold text-ink">{L.empty}</p>
+              <p className="mt-1 text-[0.9rem] text-muted">{L.emptyHint}</p>
+              <Link href={p("/tools")} className="btn btn-ghost mt-3">{L.openDirectory}</Link>
             </div>
           ) : (
             <>
@@ -130,7 +134,7 @@ export function IntentSearch({
                 return (
                   <div className={`border-b border-line p-4 ${active === 0 ? "bg-surface2" : ""}`}
                        onMouseEnter={() => setActive(0)}>
-                    <p className="text-[0.72rem] font-bold tracking-wide text-primary">أفضلُ خيارٍ لك</p>
+                    <p className="text-[0.72rem] font-bold tracking-wide text-primary">{L.best}</p>
                     <div className="mt-1.5 flex items-start gap-3">
                       <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
                         <NamedIcon name={t.icon} size={22} />
@@ -139,14 +143,14 @@ export function IntentSearch({
                         <p className="text-[1.05rem] font-bold text-ink">{t.title.ar}</p>
                         <p className="text-[0.88rem] leading-snug text-muted">{top.answer}</p>
                         <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                          <button className="btn btn-primary !py-1.5" onClick={() => go(top.slug)}>ابدأ الآن</button>
+                          <button className="btn btn-primary !py-1.5" onClick={() => go(top.slug)}>{L.start === "Go" ? "Start now" : "ابدأ الآن"}</button>
                           {t.hasDemo && (
-                            <button className="btn btn-ghost !py-1.5" onClick={() => goDemo(top.slug)}>شاهد مثالاً</button>
+                            <button className="btn btn-ghost !py-1.5" onClick={() => goDemo(top.slug)}>{L.tryExample}</button>
                           )}
                           {top.reason && <span className="text-[0.78rem] text-muted">{top.reason}</span>}
                           {t.local && (
                             <span className="ms-auto rounded-full bg-primary-soft px-2.5 py-1 text-[0.72rem] font-bold text-primary">
-                              🔒 على جهازك
+                              {L.localBadge}
                             </span>
                           )}
                         </div>
@@ -157,7 +161,7 @@ export function IntentSearch({
               })()}
 
               {flat.length > 1 && (
-                <p className="px-4 pt-3 text-[0.74rem] font-bold tracking-wide text-muted">بدائل</p>
+                <p className="px-4 pt-3 text-[0.74rem] font-bold tracking-wide text-muted">{L.alternatives}</p>
               )}
 
               <ul className="divide-y divide-line">
@@ -185,15 +189,15 @@ export function IntentSearch({
                           </span>
                         )}
                       </span>
-                      <span className="shrink-0 self-center text-[0.82rem] font-medium text-primary">ابدأ ←</span>
+                      <span className="shrink-0 self-center text-[0.82rem] font-medium text-primary">{L.start} ←</span>
                     </button>
                   </li>
                 );
               })}
               <li>
-                <Link href={`/search?q=${encodeURIComponent(q.trim())}`}
+                <Link href={p(`/search?q=${encodeURIComponent(q.trim())}`)}
                       className="block px-4 py-2.5 text-center text-[0.86rem] text-muted hover:text-primary">
-                  عرضُ كلّ النتائج
+                  {L.allResults}
                 </Link>
               </li>
               </ul>

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLocalFavorites, getRecent, listDrafts, removeDraft, toggleLocalFavorite, type DraftEntry } from "@/lib/storage";
+import {
+  allTemplates, getLocalFavorites, getRecent, listDrafts, removeDraft, toggleLocalFavorite,
+  type DraftEntry,
+} from "@/lib/storage";
 import { mergeLocalFavoritesAction } from "@/lib/actions";
 import { ToolCard, type CardTool } from "@/components/tool-card";
 import type { ToolListing } from "@/tools";
@@ -38,7 +41,12 @@ export function MyTools({ tools, categoryNames, serverFavorites, serverRecent, l
   const [merged, setMerged] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<DraftEntry[]>([]);
 
-  useEffect(() => { void listDrafts().then(setDrafts); }, []);
+  const [tpls, setTpls] = useState<{ slug: string; count: number }[]>([]);
+
+  useEffect(() => {
+    void listDrafts().then(setDrafts);
+    void allTemplates().then(setTpls);
+  }, []);
 
   useEffect(() => {
     void getLocalFavorites().then(setLocalFavs);
@@ -75,6 +83,24 @@ export function MyTools({ tools, categoryNames, serverFavorites, serverRecent, l
     <div className="flex flex-col gap-8">
       {merged !== null && merged > 0 && (
         <p role="status" className="form-ok">نُقلت {merged} أداةً من مفضّلة هذا المتصفّح إلى حسابك.</p>
+      )}
+
+      {tpls.length > 0 && (
+        <section>
+          <h2 className="mb-1 text-lg font-bold">قوالبي <span className="text-muted">{tpls.reduce((n, x) => n + x.count, 0)}</span></h2>
+          <p className="mb-3 text-[0.9rem] text-muted">
+            القالبُ حالةٌ مسمّاةٌ تُعيد استعمالَها — افتح الأداةَ واضغط اسمَ القالب.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {tpls.map((x) => (
+              <Link key={x.slug} href={`/tools/${x.slug}`}
+                    className="rounded-full border border-line bg-surface px-3 py-1.5 text-[0.86rem] text-ink hover:border-primary hover:text-primary">
+                {bySlug.get(x.slug)?.title.ar ?? x.slug}
+                <span className="ms-1.5 text-[0.78rem] text-muted">{x.count}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       {drafts.length > 0 && (

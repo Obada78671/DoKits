@@ -6,8 +6,31 @@ import {
   luminance, parseColor, rgbToOklch, toHex, toHslString, toOklchString, toRgbString,
 } from "@/tools/color-lib";
 import { ColorField, readableOn } from "@/tools/color-ui";
+import { useStrings } from "@/components/lang";
+
+const S = {
+  ar: {
+    color: "اللون",
+    hint: "اكتب hex أو rgb() أو hsl() أو اسماً عربيّاً كـ«أزرق»، أو استعمل المنتقي.",
+    bad: "لم أفهم هذا لوناً. جرّب ‎#3366cc‎ أو ‎rgb(51 102 204)‎.",
+    lightness: "الإضاءة الإدراكيّة", chroma: "التشبّع", hue: "الصبغة", wcag: "إضاءةُ WCAG",
+    note1: "الإضاءةُ هنا نوعان لا يُخلطان: ", b1: "إضاءةُ OKLCH إدراكيّة",
+    note2: " — لونان بالإضاءة نفسِها يبدوان متساويَي السطوع للعين؛ و", b2: "إضاءةُ WCAG",
+    note3: " رقمٌ فيزيائيٌّ يُحسب منه التباينُ وحدَه. أمّا إضاءةُ HSL فحسابيّةٌ لا تمثّل الرؤية: الأصفرُ والأزرقُ عندها ٥٠٪ وبينهما فرقُ سطوعٍ هائل.",
+  },
+  en: {
+    color: "Colour",
+    hint: "Type a hex, rgb(), hsl(), or a colour name — or use the picker.",
+    bad: "I couldn't read that as a colour. Try #3366cc or rgb(51 102 204).",
+    lightness: "Perceptual lightness", chroma: "Chroma", hue: "Hue", wcag: "WCAG luminance",
+    note1: "Two different lightnesses live here and must not be confused: ", b1: "OKLCH lightness is perceptual",
+    note2: " — two colours at the same value look equally bright to the eye; while ", b2: "WCAG luminance",
+    note3: " is a physical number used only to compute contrast. HSL lightness is neither: yellow and blue both sit at 50% with an enormous difference in apparent brightness.",
+  },
+};
 
 export default function ColorConvert() {
+  const s = useStrings(S);
   const [input, setInput] = useState("#3366cc");
   const c = useMemo(() => parseColor(input), [input]);
 
@@ -27,14 +50,14 @@ export default function ColorConvert() {
       <div className="flex flex-wrap gap-3">
         <ColorField
           id="cc-in"
-          label="اللون"
+          label={s.color}
           value={input}
           onChange={setInput}
-          hint="اكتب hex أو rgb() أو hsl() أو اسماً عربيّاً كـ«أزرق»، أو استعمل المنتقي."
+          hint={s.hint}
         />
       </div>
 
-      {input.trim() && !c && <ErrorNote>لم أفهم هذا لوناً. جرّب ‎#3366cc‎ أو ‎rgb(51 102 204)‎.</ErrorNote>}
+      {input.trim() && !c && <ErrorNote>{s.bad}</ErrorNote>}
 
       {c && (
         <>
@@ -60,10 +83,10 @@ export default function ColorConvert() {
           {o && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { label: "الإضاءة الإدراكيّة", value: `${Math.round(o.l * 100)}%` },
-                { label: "التشبّع", value: o.c.toFixed(3) },
-                { label: "الصبغة", value: `${Math.round(o.h)}°` },
-                { label: "إضاءةُ WCAG", value: luminance(c).toFixed(3) },
+                { label: s.lightness, value: `${Math.round(o.l * 100)}%` },
+                { label: s.chroma, value: o.c.toFixed(3) },
+                { label: s.hue, value: `${Math.round(o.h)}°` },
+                { label: s.wcag, value: luminance(c).toFixed(3) },
               ].map((t) => (
                 <div key={t.label} className="rounded-m border border-line bg-surface p-3.5 text-center">
                   <div dir="ltr" className="font-mono text-xl font-medium tabular-nums">{t.value}</div>
@@ -76,10 +99,8 @@ export default function ColorConvert() {
       )}
 
       <Note>
-        الإضاءةُ هنا نوعان لا يُخلطان: <b className="font-semibold text-ink">إضاءةُ OKLCH إدراكيّة</b> —
-        لونان بالإضاءة نفسِها يبدوان متساويَي السطوع للعين؛ و<b className="font-semibold text-ink">إضاءةُ
-        WCAG</b> رقمٌ فيزيائيٌّ يُحسب منه التباينُ وحدَه. أمّا إضاءةُ HSL فحسابيّةٌ لا تمثّل الرؤية:
-        الأصفرُ والأزرقُ عندها ٥٠٪ وبينهما فرقُ سطوعٍ هائل.
+        {s.note1}<b className="font-semibold text-ink">{s.b1}</b>{s.note2}
+        <b className="font-semibold text-ink">{s.b2}</b>{s.note3}
       </Note>
     </ToolLayout>
   );

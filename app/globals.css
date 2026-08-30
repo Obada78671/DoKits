@@ -164,4 +164,27 @@
   }
   .invoice-sheet :is(th, td, dt, dd, p) { color: #000 !important; }
   .invoice-sheet :is(.border-line, table, tr) { border-color: #999 !important; }
+
+  /*
+   * تصديرُ PDF من الأداة نفسِها.
+   *
+   * لا مكتبةَ PDF في الحزمة عن قصد: خطُّ العربيّة وحدَه يزيد المئتَي كيلوبايت،
+   * ثمّ يبقى تشكيلُ الحروف والاتّجاهُ ثنائيُّ الاتّساق على عاتقنا. أمّا محرّكُ
+   * طباعة المتصفّح فيتقن ذلك أصلاً، ويكتب PDF قابلاً للنسخ والبحث. فالعملُ هنا
+   * أن نُخرج الورقةَ نظيفةً لا أن نعيد بناء ما في المتصفّح.
+   */
+  .print-doc { display: block !important; }
+  .print-hide, .no-print { display: none !important; }
+  .card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+  .field { border-color: #bbb !important; background: #fff !important; color: #000 !important; }
+  :is(h1, h2, h3, p, span, li, td, th, label, .text-muted, .text-ink) { color: #000 !important; }
+  :is(.bg-surface, .bg-surface2, .bg-primary-soft, .bg-accent-soft) { background: #fff !important; }
+  .border-line, .border-accent { border-color: #bbb !important; }
+  a[href]::after { content: none !important; }
+  /* لا تُقطَع بطاقةُ نتيجةٍ بين صفحتين */
+  .rounded-m, table, ul { break-inside: avoid; }
+  @page { margin: 14mm; }
 }
+
+/* رأسُ المستند لا يظهر إلّا عند الطباعة */
+.print-doc { display: none; }

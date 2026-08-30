@@ -9,7 +9,11 @@ import {
   applyCarry, captureTool, isEmptySnapshot, putCarry, restoreTool, takeCarry,
   type Carry, type ToolSnapshot,
 } from "@/lib/tool-state";
-import { getDraft, setDraft } from "@/lib/storage";
+import {
+  getDraft, listTemplates, removeTemplate, saveTemplate, setDraft, type Template,
+} from "@/lib/storage";
+import { dict, path, type Lang } from "@/lib/i18n";
+import { LangProvider } from "@/components/lang";
 
 /**
  * إطارُ الأداة: يوحّد الأزرارَ والحالات دون أن يعرف شيئاً عن منطق أيّ أداة.
@@ -45,11 +49,11 @@ export function useToolActions(actions: ToolActions, deps: unknown[] = []) {
 }
 
 function ActionBar({
-  actions, toolTitle, onReset, printable, shareable, onSaveDraft, saved, onDemo,
+  actions, toolTitle, onReset, printable, shareable, onSaveDraft, saved, onDemo, t,
 }: {
   actions: ToolActions; toolTitle: string; onReset: () => void;
   printable: boolean; shareable: boolean; onSaveDraft: () => void; saved: boolean;
-  onDemo?: () => void;
+  onDemo?: () => void; t: ReturnType<typeof dict>["tool"];
 }) {
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
@@ -93,25 +97,28 @@ function ActionBar({
     <div className="flex flex-wrap gap-2 print:hidden">
       {/* الحقلُ الفارغُ يُصمِت المستخدم — والمثالُ يريه الأداةَ عاملةً بنقرة */}
       {onDemo && (
-        <button className="btn btn-ghost !py-1.5" onClick={onDemo}>املأ مثالاً</button>
+        <button className="btn btn-ghost !py-1.5" onClick={onDemo}>{t.fillExample}</button>
       )}
       {actions.getCopyText && (
-        <button className="btn btn-ghost !py-1.5" onClick={copy}>{copied ? "نُسخ ✓" : "نسخ"}</button>
+        <button className="btn btn-ghost !py-1.5" onClick={copy}>{copied ? t.copied : t.copy}</button>
       )}
       {/* إعادةُ التعيين متاحةٌ لكلّ أداة: الأداةُ تُعيد تركيبَ نفسها ما لم تعرّف أفضلَ منها */}
-      <button className="btn btn-ghost !py-1.5" onClick={actions.reset ?? onReset}>إعادة تعيين</button>
+      <button className="btn btn-ghost !py-1.5" onClick={actions.reset ?? onReset}>{t.reset}</button>
       {(printable || actions.printable) && (
-        <button className="btn btn-ghost !py-1.5" onClick={() => window.print()}>طباعة</button>
+        <button className="btn btn-ghost !py-1.5" onClick={() => window.print()}>{t.print}</button>
       )}
+      <button className="btn btn-ghost !py-1.5" onClick={() => window.print()} title={t.exportPdfHint}>
+        {t.exportPdf}
+      </button>
       {actions.getDownload && (
-        <button className="btn btn-ghost !py-1.5" onClick={download}>تنزيل</button>
+        <button className="btn btn-ghost !py-1.5" onClick={download}>{t.download}</button>
       )}
       {shareable && (
-        <button className="btn btn-ghost !py-1.5" onClick={share}>{shared ? "نُسخ الرابط ✓" : "مشاركة"}</button>
+        <button className="btn btn-ghost !py-1.5" onClick={share}>{shared ? t.shared : t.share}</button>
       )}
       {/* الحفظُ بفعلِ المستخدم لا تلقائيّاً: الوعدُ أنّ مدخلاتِه لا تُحفَظ ما لم يطلب */}
-      <button className="btn btn-ghost !py-1.5" onClick={onSaveDraft} title="تُحفَظ في هذا الجهاز وحدَه">
-        {saved ? "حُفظت ✓" : "احفظ مسودّة"}
+      <button className="btn btn-ghost !py-1.5" onClick={onSaveDraft}>
+        {saved ? t.draftSaved : t.saveDraft}
       </button>
     </div>
   );
@@ -141,13 +148,13 @@ export type FrameNextStep = { slug: string; label: string; carry?: Record<string
 
 type StoredDraft = { at: number; snap: ToolSnapshot };
 
-const since = (at: number): string => {
+const since = (at: number, t: ReturnType<typeof dict>["time"]): string => {
   const m = Math.round((Date.now() - at) / 60000);
-  if (m < 1) return "قبل لحظات";
-  if (m < 60) return `قبل ${m} دقيقة`;
+  if (m < 1) return t.now;
+  if (m < 60) return t.minutes(m);
   const h = Math.round(m / 60);
-  if (h < 24) return `قبل ${h} ساعة`;
-  return `قبل ${Math.round(h / 24)} يوم`;
+  if (h < 24) return t.hours(h);
+  return t.days(Math.round(h / 24));
 };
 
 export type FrameCapabilities = {
@@ -156,12 +163,15 @@ export type FrameCapabilities = {
 };
 
 export function ToolFrame({
-  slug, title, instructions, capabilities, nextSteps, demo, children,
+  slug, title, instructions, capabilities, nextSteps, demo, lang = "ar", children,
 }: {
   slug: string; title: string; instructions?: string;
   capabilities?: FrameCapabilities; nextSteps?: FrameNextStep[];
-  demo?: { fields: Record<string, string>; chips?: Record<string, number[]> }; children: ReactNode;
+  demo?: { fields: Record<string, string>; chips?: Record<string, number[]> };
+  lang?: Lang; children: ReactNode;
 }) {
+  const T = dict(lang).tool;
+  const TT = dict(lang).time;
   const printable = capabilities?.print ?? false;
   const router = useRouter();
   const [actions, setActions] = useState<ToolActions>({});
@@ -172,6 +182,9 @@ export function ToolFrame({
   const [saved, setSaved] = useState(false);
   const [carried, setCarried] = useState<string | null>(null);
   const pending = useRef<Carry | null>(null);
+  const [templates, setTemplates] = useState<Template<ToolSnapshot>[]>([]);
+  const [naming, setNaming] = useState(false);
+  const [tplName, setTplName] = useState("");
   const demoWanted = useRef(false);
 
   const register = useCallback((a: ToolActions) => setActions(a), []);
@@ -188,6 +201,7 @@ export function ToolFrame({
   // مسودّةٌ محفوظةٌ سابقاً؟ تُعرَض ولا تُطبَّق: الاستعادةُ بيد المستخدم
   useEffect(() => {
     void getDraft<StoredDraft>(slug).then((d) => { if (d?.snap) setDraftState(d); });
+    void listTemplates<ToolSnapshot>(slug).then(setTemplates);
   }, [slug]);
 
   /**
@@ -243,6 +257,13 @@ export function ToolFrame({
     return () => clearTimeout(t);
   }, [slug, demo, fillDemo]);
 
+  const storeTemplate = async () => {
+    if (!body.current) return;
+    setTemplates(await saveTemplate(slug, tplName, captureTool(body.current)));
+    setTplName("");
+    setNaming(false);
+  };
+
   const goNext = (step: FrameNextStep) => {
     if (step.carry && body.current) {
       const snap = captureTool(body.current);
@@ -255,11 +276,11 @@ export function ToolFrame({
         putCarry({ to: step.slug, from: slug, fromTitle: title, fields });
       }
     }
-    router.push(`/tools/${step.slug}`);
+    router.push(path(lang, `/tools/${step.slug}`));
   };
 
   return (
-    <ToolCtx.Provider value={ctx}>
+    <LangProvider value={lang}><ToolCtx.Provider value={ctx}>
       <section className="flex flex-col gap-4">
         {instructions && (
           <p className="rounded-s border border-line bg-surface2 px-4 py-2.5 text-[0.9rem] text-muted">
@@ -275,28 +296,35 @@ export function ToolFrame({
           onSaveDraft={saveDraft}
           saved={saved}
           onDemo={demo ? fillDemo : undefined}
+          t={T}
         />
+
+        {/* رأسٌ لا يظهر إلّا على الورق: المستندُ المطبوعُ يجب أن يعرّف نفسَه */}
+        <div className="print-doc mb-4 border-b border-line pb-2">
+          <p className="text-lg font-bold">{title}</p>
+          <p className="text-[0.8rem]">Do Kits · dokits.net</p>
+        </div>
 
         {carried && (
           <p className="rounded-s border border-accent bg-accent-soft px-4 py-2.5 text-[0.88rem] text-ink">
-            عُبِّئت الحقولُ ممّا أدخلتَه في <b className="font-semibold">{carried}</b> — راجعها قبل الاعتماد عليها.
+            {T.carried(carried)}
           </p>
         )}
 
         {draft && !isEmptySnapshot(draft.snap) && (
           <div className="flex flex-wrap items-center gap-2 rounded-s border border-line bg-surface2 px-4 py-2.5 text-[0.88rem]">
-            <span className="text-muted">لك مسودّةٌ محفوظةٌ على هذا الجهاز {since(draft.at)}.</span>
+            <span className="text-muted">{T.draftFound(since(draft.at, TT))}</span>
             <button
               className="btn btn-ghost !px-3 !py-1 !text-[0.82rem] ms-auto"
               onClick={() => { if (body.current) void restoreTool(body.current, draft.snap); }}
             >
-              استعِدها
+              {T.restore}
             </button>
             <button
               className="btn btn-ghost !px-3 !py-1 !text-[0.82rem]"
               onClick={() => { void setDraft(slug, null); setDraftState(null); }}
             >
-              احذفها
+              {T.deleteDraft}
             </button>
           </div>
         )}
@@ -305,9 +333,54 @@ export function ToolFrame({
           <ToolErrorBoundary key={resetKey}>{children}</ToolErrorBoundary>
         </div>
 
+        <div className="rounded-s border border-line bg-surface2 px-4 py-2.5 print:hidden">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[0.78rem] font-bold tracking-wide text-primary">{T.templates}</span>
+            {templates.length === 0 && !naming && (
+              <span className="text-[0.84rem] text-muted">{T.noTemplates}</span>
+            )}
+            {templates.map((tpl) => (
+              <span key={tpl.id} className="inline-flex items-center gap-1 rounded-full border border-line bg-surface ps-1 pe-2.5 text-[0.82rem]">
+                <button
+                  className="rounded-full px-2 py-1 font-medium text-ink hover:text-primary"
+                  onClick={() => { if (body.current) void restoreTool(body.current, tpl.snap); }}
+                >
+                  {tpl.name}
+                </button>
+                <button
+                  aria-label={`${T.deleteTemplate} ${tpl.name}`}
+                  className="text-muted hover:text-ink"
+                  onClick={() => void removeTemplate<ToolSnapshot>(slug, tpl.id).then(setTemplates)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {!naming && (
+              <button className="btn btn-ghost !px-3 !py-1 !text-[0.82rem] ms-auto" onClick={() => setNaming(true)}>
+                {T.saveTemplate}
+              </button>
+            )}
+          </div>
+          {naming && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <input
+                autoFocus
+                className="field max-w-56 !py-1.5 !text-[0.88rem]"
+                placeholder={T.templateName}
+                value={tplName}
+                onChange={(e) => setTplName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void storeTemplate(); if (e.key === "Escape") setNaming(false); }}
+              />
+              <button className="btn btn-primary !px-3 !py-1 !text-[0.82rem]" onClick={() => void storeTemplate()}>{T.save}</button>
+              <button className="btn btn-ghost !px-3 !py-1 !text-[0.82rem]" onClick={() => setNaming(false)}>{T.cancel}</button>
+            </div>
+          )}
+        </div>
+
         {nextSteps && nextSteps.length > 0 && (
           <div className="rounded-m border border-line bg-surface2 px-5 py-4 print:hidden">
-            <p className="text-[0.78rem] font-bold tracking-wide text-primary">والخطوةُ التالية؟</p>
+            <p className="text-[0.78rem] font-bold tracking-wide text-primary">{T.nextStep}</p>
             <div className="mt-2.5 flex flex-wrap gap-2">
               {nextSteps.map((step) => (
                 <button key={step.slug} className="btn btn-ghost !py-1.5" onClick={() => goNext(step)}>
@@ -317,12 +390,12 @@ export function ToolFrame({
             </div>
             {nextSteps.some((s) => s.carry) && (
               <p className="mt-2 text-[0.8rem] text-muted">
-                ما أدخلتَه ينتقل معك إلى الأداة التالية — في جهازك وحدَه، لا في الرابط ولا على خادم.
+                {T.carryNote}
               </p>
             )}
           </div>
         )}
       </section>
-    </ToolCtx.Provider>
+    </ToolCtx.Provider></LangProvider>
   );
 }

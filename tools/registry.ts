@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { CATEGORY_IDS, categoryById } from "@/tools/categories";
+import type { Lang } from "@/lib/i18n";
 
 /**
  * سجلُّ الأدوات — عقدُ المنصّة مع أدواتها.
@@ -125,6 +126,17 @@ export type ToolManifest = {
   demo?: ToolDemo;
   nextSteps?: NextStep[];
   faq?: ToolFaq[];
+  /**
+   * اللغاتُ التي تُرجمت واجهتُها. العربيّةُ دائماً، والإنجليزيّةُ متى نضجت.
+   * ولا تُعرَض في `/en` أداةٌ لم تُعلن "en" — فصفحةٌ نصفُها عربيٌّ ونصفُها
+   * إنكليزيٌّ أسوأُ من صفحةٍ غيرِ موجودة.
+   */
+  langs: Lang[];
+  /** المحتوى الإنجليزيّ — يُعرَض في `/en` وحدَه، وما لم يُترجَم يُحذَف لا يُخلَط */
+  instructionsEn?: string;
+  useStepsEn?: string[];
+  howItWorksEn?: string[];
+  faqEn?: ToolFaq[];
 
   load: () => Promise<{ default: ComponentType }>;
 };
@@ -163,6 +175,11 @@ export type ToolInput = {
   demo?: ToolDemo;
   nextSteps?: NextStep[];
   faq?: ToolFaq[];
+  langs?: Lang[];
+  instructionsEn?: string;
+  useStepsEn?: string[];
+  howItWorksEn?: string[];
+  faqEn?: ToolFaq[];
   load: () => Promise<{ default: ComponentType }>;
 };
 
@@ -219,6 +236,11 @@ export function defineTool(t: ToolInput): ToolManifest {
     demo: t.demo,
     nextSteps: t.nextSteps,
     faq: t.faq,
+    langs: t.langs ?? ["ar"],
+    instructionsEn: t.instructionsEn,
+    useStepsEn: t.useStepsEn,
+    howItWorksEn: t.howItWorksEn,
+    faqEn: t.faqEn,
     load: t.load,
   };
 }
@@ -266,6 +288,7 @@ export type ToolListing = {
   local: boolean;
   /** علمٌ فقط لا القيم: البحثُ يعرض «شاهد مثالاً» متى وُجد */
   hasDemo: boolean;
+  langs: Lang[];
 };
 
 export function toListing(t: ToolManifest | ToolSummary): ToolListing {
@@ -278,6 +301,7 @@ export function toListing(t: ToolManifest | ToolSummary): ToolListing {
     capabilities: t.capabilities, publishedAt: t.publishedAt,
     local: t.privacy.processing === "local",
     hasDemo: !!t.demo && Object.keys(t.demo.fields).length > 0,
+    langs: t.langs,
   };
 }
 
@@ -391,6 +415,12 @@ export function validateRegistry(all: ToolSummary[]): string[] {
       errors.push(`${t.slug}: تصنيفٌ فرعيٌّ مجهول «${t.subcategoryId}»`);
     }
     if (!/^\d+\.\d+\.\d+$/.test(t.version)) errors.push(`${t.slug}: إصدارٌ غيرُ SemVer`);
+    if (!t.langs.includes("ar")) errors.push(`${t.slug}: العربيّةُ أصلٌ لا تُترك`);
+    if (t.langs.includes("en")) {
+      if (!t.instructionsEn) errors.push(`${t.slug}: يعلن الإنجليزيّةَ بلا instructionsEn`);
+      // الوصفُ يرتدُّ إلى العربيّة متى غاب descriptionEn، فيتسرّب إلى صفحةٍ إنكليزيّة
+      if (t.description.en === t.description.ar) errors.push(`${t.slug}: يعلن الإنجليزيّةَ بلا descriptionEn`);
+    }
     for (const n of t.nextSteps ?? []) {
       if (!ids.has(n.slug)) errors.push(`${t.slug}: خطوةٌ تالية إلى أداةٍ غير موجودة «${n.slug}»`);
       if (n.slug === t.id) errors.push(`${t.slug}: خطوةٌ تالية إلى نفسه`);

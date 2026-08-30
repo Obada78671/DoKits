@@ -14,16 +14,20 @@ export function toBase64(text: string, urlSafe = false): string {
   return urlSafe ? b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : b64;
 }
 
-export type Decoded = { ok: true; text: string; bytes: number } | { ok: false; error: string };
+/** رمزُ الخطأ إلى جانب نصِّه: المكتبةُ لا تعرف لغةَ الواجهة، فالواجهةُ تترجم بالرمز */
+export type DecodeError = "empty" | "alphabet" | "length" | "utf8";
+export type Decoded =
+  | { ok: true; text: string; bytes: number }
+  | { ok: false; code: DecodeError; error: string };
 
 export function fromBase64(value: string): Decoded {
   const cleaned = value.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
-  if (!cleaned) return { ok: false, error: "لا شيءَ لفكّه." };
+  if (!cleaned) return { ok: false, code: "empty", error: "لا شيءَ لفكّه." };
   if (!/^[A-Za-z0-9+/]*=*$/.test(cleaned)) {
-    return { ok: false, error: "النصُّ ليس Base64 صالحاً — فيه محارفُ خارج الأبجديّة." };
+    return { ok: false, code: "alphabet", error: "النصُّ ليس Base64 صالحاً — فيه محارفُ خارج الأبجديّة." };
   }
   const rem = cleaned.length % 4;
-  if (rem === 1) return { ok: false, error: "طولُ النصّ لا يصلح لـBase64 (بقيّةُ قسمةٍ على ٤ تساوي ١)." };
+  if (rem === 1) return { ok: false, code: "length", error: "طولُ النصّ لا يصلح لـBase64 (بقيّةُ قسمةٍ على ٤ تساوي ١)." };
   const padded = rem ? cleaned + "=".repeat(4 - rem) : cleaned;
   try {
     const bin = atob(padded);
@@ -31,7 +35,7 @@ export function fromBase64(value: string): Decoded {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     return { ok: true, text, bytes: bytes.length };
   } catch {
-    return { ok: false, error: "فُكَّ الترميزُ لكنّ الناتجَ ليس نصّاً بترميز UTF-8 — لعلّه ملفٌّ ثنائيّ." };
+    return { ok: false, code: "utf8", error: "فُكَّ الترميزُ لكنّ الناتجَ ليس نصّاً بترميز UTF-8 — لعلّه ملفٌّ ثنائيّ." };
   }
 }
 
@@ -522,12 +526,15 @@ export const cryptoWords = (n: number): Uint32Array =>
 export const entropyBits = (poolSize: number, length: number): number =>
   poolSize <= 1 ? 0 : Math.round(length * Math.log2(poolSize));
 
-export function strengthLabel(bits: number): { label: string; lit: boolean } {
-  if (bits < 40) return { label: "ضعيفة — تُكسَر بحاسوبٍ عاديّ", lit: false };
-  if (bits < 60) return { label: "مقبولةٌ لحسابٍ غير مهمّ", lit: false };
-  if (bits < 80) return { label: "جيّدة", lit: false };
-  if (bits < 100) return { label: "قويّة", lit: true };
-  return { label: "قويّةٌ جدّاً — أكثرُ ممّا يلزم عادةً", lit: true };
+export type StrengthLevel = "weak" | "ok" | "good" | "strong" | "overkill";
+
+/** المستوى رمزٌ تترجمه الواجهة، والنصُّ العربيُّ يبقى للاختبارات والتوثيق */
+export function strengthLabel(bits: number): { level: StrengthLevel; label: string; lit: boolean } {
+  if (bits < 40) return { level: "weak", label: "ضعيفة — تُكسَر بحاسوبٍ عاديّ", lit: false };
+  if (bits < 60) return { level: "ok", label: "مقبولةٌ لحسابٍ غير مهمّ", lit: false };
+  if (bits < 80) return { level: "good", label: "جيّدة", lit: false };
+  if (bits < 100) return { level: "strong", label: "قويّة", lit: true };
+  return { level: "overkill", label: "قويّةٌ جدّاً — أكثرُ ممّا يلزم عادةً", lit: true };
 }
 
 /* ═══════════ UUID ═══════════ */

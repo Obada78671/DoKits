@@ -28,7 +28,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: t.seo.title,
     description: t.seo.description,
     keywords: [...t.keywords, ...t.keywordsEn, ...t.tags, t.title.en],
-    alternates: { canonical: t.seo.canonicalPath },
+    alternates: {
+      canonical: t.seo.canonicalPath,
+      ...(t.langs.includes("en") ? { languages: { ar: t.route, en: `/en${t.route}` } } : {}),
+    },
     robots: t.seo.noIndex ? { index: false, follow: true } : undefined,
     openGraph: {
       title: `${t.seo.title} · Do Kits`, description: t.seo.description,
@@ -133,6 +136,11 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           {tool.tags.slice(0, 4).map((tag) => (
             <span key={tag} className="rounded-full border border-line px-2.5 py-1 text-muted">{tag}</span>
           ))}
+          {tool.langs.includes("en") && (
+            <Link href={`/en${tool.route}`} hrefLang="en" className="text-[0.8rem] font-medium text-primary hover:underline">
+              English →
+            </Link>
+          )}
           <span className="ms-auto">
             <ToolFavorite slug={tool.slug} initial={isFav} loggedIn={!!user} />
           </span>

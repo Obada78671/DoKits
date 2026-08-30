@@ -9,12 +9,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const live = publishedTools(summarizeAll(TOOLS));
   const now = new Date();
 
-  const tools = live.filter(isIndexable).map((t) => ({
+  const indexable = live.filter(isIndexable);
+
+  /** وسمُ hreflang يقترن بكلّ صفحةٍ لها نظيرٌ في اللغة الأخرى، ويشير كلٌّ منهما إلى الآخر */
+  const tools = indexable.map((t) => ({
     url: `${BASE}${t.seo.canonicalPath}`,
     lastModified: t.updatedAt ? new Date(t.updatedAt) : now,
     changeFrequency: "monthly" as const,
     priority: 0.8,
+    ...(t.langs.includes("en")
+      ? { alternates: { languages: { ar: `${BASE}${t.route}`, en: `${BASE}/en${t.route}` } } }
+      : {}),
   }));
+
+  const enTools = indexable.filter((t) => t.langs.includes("en")).map((t) => ({
+    url: `${BASE}/en${t.route}`,
+    lastModified: t.updatedAt ? new Date(t.updatedAt) : now,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+    alternates: { languages: { ar: `${BASE}${t.route}`, en: `${BASE}/en${t.route}` } },
+  }));
+
+  const enHome = [{
+    url: `${BASE}/en`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+    alternates: { languages: { ar: BASE, en: `${BASE}/en` } },
+  }];
 
   const categories = CATEGORIES.flatMap((c) => {
     const inCat = live.filter((t) => t.categoryId === c.id);
@@ -44,5 +66,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
     ...categories,
     ...tools,
+    ...enHome,
+    ...enTools,
   ];
 }

@@ -73,6 +73,7 @@ export const KEYS = {
   favorites: "favorites",
   recent: "recent",
   draft: (slug: string) => `draft:${slug}`,
+  templates: (slug: string) => `tpl:${slug}`,
 } as const;
 
 export type RecentEntry = { slug: string; at: number };
@@ -125,4 +126,40 @@ export async function listDrafts(): Promise<DraftEntry[]> {
 
 export async function removeDraft(slug: string): Promise<void> {
   return storage().remove(KEYS.draft(slug));
+}
+
+/**
+ * القالبُ مسودّةٌ مسمّاةٌ تُعاد مراراً: «فاتورةُ عميلي الشهريّة»، «تسعيرُ منتجٍ
+ * بهامش ٣٠٪». والفرقُ عن المسودّة أنّ المسودّةَ واحدةٌ تُستأنَف، والقالبَ
+ * مجموعةٌ تُختار منها — ولذلك لكلٍّ مفتاحُه وواجهتُه.
+ */
+export type Template<T = unknown> = { id: string; name: string; at: number; snap: T };
+
+export async function listTemplates<T>(slug: string): Promise<Template<T>[]> {
+  return (await storage().get<Template<T>[]>(KEYS.templates(slug))) ?? [];
+}
+
+export async function saveTemplate<T>(slug: string, name: string, snap: T): Promise<Template<T>[]> {
+  const cur = await listTemplates<T>(slug);
+  const id = `${Date.now().toString(36)}${cur.length}`;
+  const next = [{ id, name: name.trim() || "قالب", at: Date.now(), snap }, ...cur].slice(0, 20);
+  await storage().set(KEYS.templates(slug), next);
+  return next;
+}
+
+export async function removeTemplate<T>(slug: string, id: string): Promise<Template<T>[]> {
+  const next = (await listTemplates<T>(slug)).filter((t) => t.id !== id);
+  await storage().set(KEYS.templates(slug), next);
+  return next;
+}
+
+/** كلُّ القوالب عبر الأدوات — لعرضها في «لوحتي» */
+export async function allTemplates(): Promise<{ slug: string; count: number }[]> {
+  const keys = await storage().keys("tpl:");
+  const out: { slug: string; count: number }[] = [];
+  for (const k of keys) {
+    const list = (await storage().get<Template[]>(k)) ?? [];
+    if (list.length) out.push({ slug: k.slice("tpl:".length), count: list.length });
+  }
+  return out;
 }
