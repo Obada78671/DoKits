@@ -1,23 +1,34 @@
-import { listCategories, listEnabledTools } from "@/lib/db";
+import { TOOLS, publishedTools, summarizeAll } from "@/tools";
+import { categoryNames, favoriteSlugs, popularity } from "@/lib/db";
 import { getUser } from "@/lib/auth";
-import { HomeExplorer } from "@/components/home-explorer";
+import { ToolBrowser } from "@/components/tool-browser";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: { searchParams: Promise<{ cat?: string }> }) {
   const user = await getUser();
-  const categories = listCategories();
-  const tools = listEnabledTools(user?.id);
+  const { cat } = await searchParams;
+  const tools = summarizeAll(publishedTools(TOOLS));
 
   return (
     <div className="flex flex-col gap-7 pt-10">
       <section>
         <h1 className="text-3xl font-bold">حقيبةُ أدواتٍ تُنجِز</h1>
         <p className="mt-1.5 max-w-[52ch] text-muted">
-          أدواتُ عملٍ صغيرةٌ نافعة، مصنّفةٌ حسب الاختصاص — تعمل كلُّها هنا، بلا تثبيتٍ ولا إعلانات.
+          {tools.length} أداةً عربيّةً مصنّفةً حسب الاختصاص — تعمل كلُّها في متصفّحك،
+          بلا تثبيتٍ ولا إعلانات.
         </p>
       </section>
-      <HomeExplorer categories={categories} tools={tools} loggedIn={!!user} />
+      <ToolBrowser
+        tools={tools}
+        categoryNames={categoryNames()}
+        serverFavorites={user ? favoriteSlugs(user.id) : []}
+        popularity={popularity()}
+        loggedIn={!!user}
+        initialCategory={cat}
+      />
     </div>
   );
 }

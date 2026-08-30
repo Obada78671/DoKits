@@ -2,12 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
+import { db, toolIdBySlug } from "@/lib/db";
 import {
   createSession, destroyAllSessions, destroyCurrentSession, getUser,
   hashPassword, verifyPassword,
 } from "@/lib/auth";
 import { clientKey, take } from "@/lib/rate-limit";
+import { CATEGORIES } from "@/tools/categories";
 
 export type FormState = { error?: string; ok?: string };
 
@@ -101,15 +102,48 @@ export async function signOutAllAction() {
   redirect("/login");
 }
 
-/* ————— المفضّلة ————— */
-export async function toggleFavoriteAction(toolId: number) {
+/* ————— المفضّلة وسجلُّ الاستخدام ————— */
+
+export async function toggleFavoriteAction(slug: string) {
   const user = await getUser();
   if (!user) redirect("/login");
+  const toolId = toolIdBySlug(slug);
+  if (toolId === null) return;
   const d = db();
   const existing = d.prepare("SELECT 1 x FROM favorites WHERE user_id = ? AND tool_id = ?").get(user.id, toolId);
   if (existing) d.prepare("DELETE FROM favorites WHERE user_id = ? AND tool_id = ?").run(user.id, toolId);
   else d.prepare("INSERT INTO favorites (user_id, tool_id) VALUES (?, ?)").run(user.id, toolId);
   revalidatePath("/");
+  revalidatePath("/my");
+}
+
+/** يرفع مفضّلةَ الزائر إلى حسابه بعد الدخول — يُرجع عددَ ما أُضيف */
+export async function mergeLocalFavoritesAction(slugs: string[]): Promise<number> {
+  const user = await getUser();
+  if (!user || slugs.length === 0) return 0;
+  const d = db();
+  const ins = d.prepare("INSERT OR IGNORE INTO favorites (user_id, tool_id) VALUES (?, ?)");
+  let added = 0;
+  d.transaction(() => {
+    for (const s of slugs.slice(0, 200)) {
+      const id = toolIdBySlug(s);
+      if (id !== null) added += ins.run(user.id, id).changes;
+    }
+  })();
+  if (added) { revalidatePath("/"); revalidatePath("/my"); }
+  return added;
+}
+
+/** سجلُّ الاستخدام للمستخدم المسجَّل — اسمُ الأداة والوقتُ فقط */
+export async function recordUsageAction(slug: string) {
+  const user = await getUser();
+  if (!user || toolIdBySlug(slug) === null) return;
+  db()
+    .prepare(`
+      INSERT INTO tool_usage (user_id, tool_slug, used_at, uses) VALUES (?, ?, unixepoch(), 1)
+      ON CONFLICT(user_id, tool_slug) DO UPDATE SET used_at = unixepoch(), uses = uses + 1
+    `)
+    .run(user.id, slug);
 }
 
 /* ————— إدارة التصنيفات (admin) ————— */
@@ -136,11 +170,23 @@ export async function addCategoryAction(_prev: FormState, form: FormData): Promi
   return { ok: `أُضيف تصنيف «${name}».` };
 }
 
+/** التسميةُ تجاوزٌ على السجلّ — تُعلَّم كي لا تعيدها المزامنةُ عند الإقلاع */
 export async function renameCategoryAction(id: number, form: FormData) {
   await requireAdmin();
   const name = String(form.get("name") ?? "").trim();
   if (name.length < 2) return;
-  db().prepare("UPDATE categories SET name_ar = ? WHERE id = ?").run(name, id);
+  db().prepare("UPDATE categories SET name_ar = ?, name_overridden = 1 WHERE id = ?").run(name, id);
+  revalidatePath("/admin/categories");
+  revalidatePath("/");
+}
+
+/** يُعيد التصنيفَ إلى اسمه في السجلّ */
+export async function resetCategoryNameAction(id: number) {
+  await requireAdmin();
+  const d = db();
+  const row = d.prepare("SELECT slug FROM categories WHERE id = ?").get(id) as { slug: string } | undefined;
+  const def = row ? CATEGORIES.find((c) => c.id === row.slug) : undefined;
+  if (def) d.prepare("UPDATE categories SET name_ar = ?, name_overridden = 0 WHERE id = ?").run(def.name, id);
   revalidatePath("/admin/categories");
   revalidatePath("/");
 }
@@ -148,6 +194,8 @@ export async function renameCategoryAction(id: number, form: FormData) {
 export async function deleteCategoryAction(id: number) {
   await requireAdmin();
   const d = db();
+  const row = d.prepare("SELECT slug FROM categories WHERE id = ?").get(id) as { slug: string } | undefined;
+  if (row && CATEGORIES.some((c) => c.id === row.slug)) redirect("/admin/categories?err=registry");
   const used = (d.prepare(`
     SELECT COUNT(*) c FROM tools t JOIN categories c2 ON c2.slug = t.category_slug WHERE c2.id = ?
   `).get(id) as { c: number }).c;

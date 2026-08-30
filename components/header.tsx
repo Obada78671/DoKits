@@ -16,6 +16,7 @@ export async function Header() {
           </span>
         </Link>
         <nav className="me-auto flex items-center gap-2 text-[0.92rem]">
+          <Link href="/my" className="btn btn-ghost !py-1.5">أدواتي</Link>
           {user?.role === "admin" && (
             <Link href="/admin/categories" className="btn btn-ghost !py-1.5">التصنيفات</Link>
           )}
