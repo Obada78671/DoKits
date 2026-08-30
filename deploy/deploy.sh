@@ -11,7 +11,12 @@ cd "$P"
 [ -f "$APPDATA/.env" ] || { echo "✗ ناقص: $APPDATA/.env (يُنشأ على الخادم بصلاحيّة 600)"; exit 1; }
 
 echo "— سحب آخر الشيفرة"
-git pull --ff-only
+# مفتاحُ الخادم قد لا يكون مسجَّلاً على GitHub (مفتاحُ نشرٍ للقراءة). فشلُ السحب
+# لا يوقف النشر — لكنّه يُعلَن صراحةً، ويُطبع ما يُنشَر فعلاً كي لا يُنشر قديمٌ بصمت.
+if ! git pull --ff-only 2>/dev/null; then
+  echo "  ⚠ تعذّر السحب من GitHub — يُنشر ما في هذه النسخة"
+fi
+echo "  المُنشَر: $(git log --oneline -1) · v$(node -p "require('./package.json').version" 2>/dev/null)"
 
 echo "— بناء الصورة (سقف 3غ، بلا تبديل)"
 docker build --memory=3g --memory-swap=3g -t dokits:local -f deploy/Dockerfile .
