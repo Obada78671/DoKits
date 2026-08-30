@@ -1,0 +1,88 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { ChipGroup, ErrorNote, Note, ResultBox, ToolLayout } from "@/components/tool-kit";
+import { toHex, toOklchString, type Rgb } from "@/tools/color-lib";
+import { Swatch } from "@/tools/color-ui";
+import { dominantColors } from "@/tools/image-lib";
+import { ImagePicker, LocalNote, useImagePicker } from "@/tools/image-ui";
+
+const COUNTS = ["4", "6", "8", "12"];
+const SAMPLE = 160; // ضلعُ العيّنة: يكفي للألوان السائدة ويبقى فوريّاً مهما كبرت الصورة
+
+export default function ImageColors() {
+  const { picked, error, pick } = useImagePicker();
+  const [count, setCount] = useState("6");
+  const [colors, setColors] = useState<{ color: Rgb; share: number }[]>([]);
+  const [failed, setFailed] = useState("");
+
+  useEffect(() => {
+    if (!picked) { setColors([]); return; }
+    setFailed("");
+    const { naturalWidth: w, naturalHeight: h } = picked.img;
+    const k = Math.min(SAMPLE / w, SAMPLE / h, 1);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(w * k));
+    canvas.height = Math.max(1, Math.round(h * k));
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    ctx.drawImage(picked.img, 0, 0, canvas.width, canvas.height);
+    try {
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      setColors(dominantColors(data, Number(count)));
+    } catch {
+      setFailed("تعذّرت قراءةُ بكسلات الصورة في هذا المتصفّح.");
+    }
+  }, [picked, count]);
+
+  const css = colors.map((c, i) => `--img-${i + 1}: ${toHex(c.color)};`).join("\n");
+
+  return (
+    <ToolLayout>
+      <ImagePicker id="ic-file" onPick={pick} picked={picked} hint="ألوانُ الصورة تُستخرج في متصفّحك ولا تُرفَع." />
+      {error && <ErrorNote>{error}</ErrorNote>}
+      {failed && <ErrorNote>{failed}</ErrorNote>}
+
+      {picked && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={picked.url} alt="الصورة المختارة" className="max-h-60 w-full rounded-m border border-line object-contain" />
+      )}
+
+      {picked && <ChipGroup label="عددُ الألوان" value={count} onChange={setCount} options={COUNTS.map((c) => ({ id: c, label: c }))} />}
+
+      {colors.length > 0 && (
+        <>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {colors.map((c, i) => (
+              <Swatch key={`${toHex(c.color)}-${i}`} color={c.color} sub={`${c.share}٪ من البكسلات`} tall />
+            ))}
+          </div>
+
+          <div className="rounded-m border border-line bg-surface">
+            <ul className="divide-y divide-line">
+              {colors.map((c, i) => (
+                <li key={`row-${i}`} className="flex items-center gap-3 px-4 py-2">
+                  <span className="size-5 shrink-0 rounded-full border border-line" style={{ backgroundColor: toHex(c.color) }} />
+                  <span dir="ltr" className="font-mono text-[0.88rem]">{toHex(c.color)}</span>
+                  <span dir="ltr" className="font-mono text-[0.8rem] text-muted">{toOklchString(c.color)}</span>
+                  <span className="ms-auto font-mono text-[0.82rem] tabular-nums text-muted">{c.share}٪</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <ResultBox title="متغيّرات CSS" value={css} dir="ltr" mono />
+        </>
+      )}
+
+      <LocalNote />
+
+      <Note>
+        الألوانُ تُجمَع في مكعّباتٍ من ٣٢ درجةً ثمّ تُرتَّب بالتكرار — طريقةٌ
+        <b className="font-semibold text-ink"> حتميّة</b>: الصورةُ نفسُها تعطي اللوحةَ نفسَها في كلّ مرّة.
+        أمّا خوارزمياتُ العنقدة الشائعة فتبدأ من بذرةٍ عشوائيّة، فتتبدّل نتيجتُها بين تشغيلٍ وآخرَ
+        وذلك مربكٌ حين تحاول مطابقةَ لونٍ بعينه.
+      </Note>
+    </ToolLayout>
+  );
+}

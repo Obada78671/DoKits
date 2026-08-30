@@ -33,6 +33,35 @@ test("تعريفُ الأداة يستورد مكوّنَها فعلاً (لا �
   }
 });
 
+/**
+ * قاعدةُ التطبيع ٤: تنسيقُ القشرة يمرّ برموز `--dk-` وحدَها.
+ *
+ * والفحصُ محصورٌ في `className` عن قصد: أدواتُ الألوان تحمل ألواناً صريحةً
+ * **بياناً** — قيمةً افتراضيّةً، أو تعبئةَ canvas، أو نصَّ مثالٍ في placeholder —
+ * وذلك مشروعٌ لا يخالف القاعدة. أمّا لونٌ في صنفٍ فهو تنسيقُ قشرةٍ يتجاوز الرموز.
+ */
+test("لا لونَ صلبٌ في تنسيق الواجهة", () => {
+  const COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/;
+  const walk = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const p = path.join(dir, e.name);
+      return e.isDirectory() ? walk(p) : p.endsWith(".tsx") ? [p] : [];
+    });
+
+  const offenders: string[] = [];
+  for (const file of ["app", "components", "tools"].flatMap((d) => walk(path.join(ROOT, d)))) {
+    // الشعارُ يرسم بـvar(--dk-*) داخل SVG، فلا صنفَ فيه أصلاً
+    if (file.endsWith(path.join("components", "icons.tsx"))) continue;
+    fs.readFileSync(file, "utf8").split("\n").forEach((line, i) => {
+      const classes = line.match(/className=(?:"[^"]*"|\{`[^`]*`\}|\{"[^"]*"\})/g) ?? [];
+      if (classes.some((c) => COLOR.test(c))) {
+        offenders.push(`${path.relative(ROOT, file)}:${i + 1}`);
+      }
+    });
+  }
+  assert.deepEqual(offenders, []);
+});
+
 test("عددُ الأدوات في كلّ تصنيفٍ يُشتقّ ولا يُكتب", () => {
   const counts = categoryCounts(TOOLS);
   const total = counts.reduce((s, c) => s + c.count, 0);

@@ -10,7 +10,9 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
+  // blob: لازمٌ لمعاينة صورةٍ يختارها المستخدم من جهازه — العنوانُ يُنشئه سكربتُنا
+  // وهو من أصلنا وحدَه ولا يشير إلى الشبكة، فلا يوسّع السطحَ المكشوف.
+  "img-src 'self' data: blob:",
   "font-src 'self'",
   `connect-src 'self'${dev ? " ws:" : ""}`,
   "object-src 'none'",

@@ -175,6 +175,27 @@ const MAP: Record<string, (p: P) => React.ReactElement> = {
   idcard: (p) => (
     <svg {...base(p.size, p)}><rect x="2" y="5" width="20" height="14" rx="3" /><circle cx="8" cy="11" r="2" /><path d="M5 16a3.5 3.5 0 0 1 6 0M14 10h5M14 14h3" /></svg>
   ),
+  droplet: (p) => (
+    <svg {...base(p.size, p)}><path d="M12 3s6 6.3 6 10a6 6 0 0 1-12 0c0-3.7 6-10 6-10z" /><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5" /></svg>
+  ),
+  contrast: (p) => (
+    <svg {...base(p.size, p)}><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" /></svg>
+  ),
+  swatches: (p) => (
+    <svg {...base(p.size, p)}><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="8" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" /></svg>
+  ),
+  gradient: (p) => (
+    <svg {...base(p.size, p)}><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M3 16h18M3 12.5h18M3 9h18" strokeOpacity="0.45" /></svg>
+  ),
+  resize: (p) => (
+    <svg {...base(p.size, p)}><rect x="3" y="3" width="12" height="12" rx="2.5" /><path d="M9 21h12V9M15 15l6 6" /></svg>
+  ),
+  eyedropper: (p) => (
+    <svg {...base(p.size, p)}><path d="m14 6 4 4M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4z" /><path d="M4 21h16" /></svg>
+  ),
+  appicon: (p) => (
+    <svg {...base(p.size, p)}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="3.5" /></svg>
+  ),
   tool: (p) => (
     <svg {...base(p.size, p)}><path d="M14.5 4.5a5 5 0 0 0-6.6 6.2L3 15.6V21h5.4l4.9-4.9a5 5 0 0 0 6.2-6.6l-3.4 3.4-3.5-1-1-3.5z" /></svg>
   ),
