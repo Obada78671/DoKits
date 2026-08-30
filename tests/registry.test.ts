@@ -160,3 +160,50 @@ test("الروابطُ القديمة لم تنكسر: كلُّ أداةٍ ما 
     assert.equal(t!.route, `/tools/${slug}`);
   }
 });
+
+/* ————— طبقةُ النيّة والمهامّ والمسارات ————— */
+
+test("النيّةُ تصل بالسؤال العامّيّ إلى الأداة الصحيحة", async () => {
+  const { matchIntents } = await import("../lib/intents.ts");
+  const cases: [string, string][] = [
+    ["كم أربح من المنتج؟", "pricing"],
+    ["ابغى احسب الضريبه", "vat"],
+    ["بدي اعمل فاتورة", "invoice"],
+    ["حوّل هذا التاريخ للهجري", "hijri-gregorian"],
+    ["كم القسط الشهري؟", "loan"],
+    ["أريد تحويل مبلغ إلى كلمات", "number-to-words"],
+    ["كتبت واللغة خطأ", "keyboard-fix"],
+  ];
+  for (const [q, slug] of cases) {
+    const m = matchIntents(q);
+    assert.equal(m[0]?.intent.toolSlug, slug, `«${q}» → ${m[0]?.intent.toolSlug ?? "لا شيء"}`);
+  }
+});
+
+test("كلُّ نيّةٍ تشير إلى أداةٍ منشورة، ولكلٍّ سببٌ وجواب", async () => {
+  const { INTENTS } = await import("../lib/intents.ts");
+  const live = new Set(publishedTools(TOOLS).map((t) => t.slug));
+  for (const i of INTENTS) {
+    assert.ok(live.has(i.toolSlug), `النيّة «${i.id}» تشير إلى أداةٍ غير منشورة`);
+    assert.ok(i.reason.trim() && i.answer.trim(), `النيّة «${i.id}» بلا سببٍ أو جواب`);
+    assert.ok(i.phrases.length >= 3, `النيّة «${i.id}» بعباراتٍ قليلة`);
+  }
+});
+
+test("المهامُّ والمساراتُ لا تشير إلى أداةٍ غير موجودة", async () => {
+  const { TASKS, WORKFLOWS } = await import("../tools/tasks.ts");
+  const live = new Set(publishedTools(TOOLS).map((t) => t.slug));
+  for (const t of TASKS) {
+    assert.ok(t.tools.length > 0, `المهمّة «${t.id}» بلا أدوات`);
+    for (const s of t.tools) assert.ok(live.has(s), `المهمّة «${t.id}» تشير إلى «${s}»`);
+  }
+  for (const w of WORKFLOWS) {
+    assert.ok(w.steps.length >= 2, `المسار «${w.id}» بخطوةٍ واحدة`);
+    for (const st of w.steps) assert.ok(live.has(st.toolSlug), `المسار «${w.id}» يشير إلى «${st.toolSlug}»`);
+  }
+});
+
+test("البحثُ يتسامح مع خطأٍ مطبعيٍّ واحد", () => {
+  assert.equal(searchTools(TOOLS, "الزكاه")[0]?.tool.slug, "zakat");
+  assert.ok(searchTools(TOOLS, "فاتوره").length > 0);
+});

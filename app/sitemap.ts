@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { CATEGORIES, TOOLS, isIndexable, publishedTools, summarizeAll } from "@/tools";
+import { WORKFLOWS } from "@/tools/tasks";
 
 const BASE = process.env.SITE_URL ?? "https://dokits.net";
 
@@ -35,6 +36,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: BASE, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${BASE}/tools`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    ...WORKFLOWS.map((w) => ({
+      url: `${BASE}/workflows/${w.id}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     ...categories,
     ...tools,
   ];

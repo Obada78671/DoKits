@@ -60,6 +60,27 @@ export type SearchContext = {
 
 export type SearchHit<T extends ToolSummary = ToolSummary> = { tool: T; score: number; reason: string };
 
+/** مسافةُ تحريرٍ محدودةٌ بواحد — تكفي خطأً مطبعيّاً ولا تخلط الكلمات */
+function withinOneEdit(a: string, b: string): boolean {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  if (a === b) return true;
+  let i = 0, j = 0, edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++;
+    else if (a.length < b.length) j++;
+    else { i++; j++; }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+}
+
+/** يتسامح مع خطأٍ مطبعيٍّ واحدٍ في الكلمات التي يستحقّ فيها ذلك */
+function fuzzyHit(haystack: string[], term: string): boolean {
+  if (term.length < 4) return false;
+  return haystack.some((h) => h.split(" ").some((w) => w.length >= 4 && withinOneEdit(w, term)));
+}
+
 /** الترجيح: الاسمُ أوّلاً، ثمّ الكلماتُ المفتاحيّة، ثمّ الوصف، ثمّ التصنيف */
 function scoreTool(t: ToolSummary, q: string): { score: number; reason: string } {
   const title = normalizeAr(t.title.ar);
@@ -77,6 +98,7 @@ function scoreTool(t: ToolSummary, q: string): { score: number; reason: string }
   if (desc.includes(q)) return { score: 30, reason: "في الوصف" };
   if (sub && sub.includes(q)) return { score: 22, reason: "تصنيفٌ فرعيّ" };
   if (cat.includes(q)) return { score: 18, reason: "التصنيف" };
+  if (fuzzyHit([title, titleEn, ...kws], q)) return { score: 14, reason: "تقاربٌ في الكتابة" };
   return { score: 0, reason: "" };
 }
 
