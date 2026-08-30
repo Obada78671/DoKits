@@ -20,6 +20,8 @@ WORKDIR /app
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+# سكربتاتُ التشغيل (ترقيةُ مدير) — تُنفَّذ بـdocker exec وتستعمل better-sqlite3 من standalone
+COPY --from=build /app/scripts ./scripts
 RUN mkdir -p /data .next/cache && chown -R node:node /data .next/cache
 VOLUME /data
 USER node

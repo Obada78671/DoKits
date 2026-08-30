@@ -13,7 +13,21 @@ npm install
 npm run dev        # http://localhost:3902
 ```
 
-القاعدة تُنشأ وتُهاجَر وتُبذَر تلقائيّاً في `data/` عند أوّل طلب. ترقية مدير: `node scripts/make-admin.mjs <username>`.
+القاعدة تُنشأ وتُهاجَر وتُبذَر تلقائيّاً في `data/` عند أوّل طلب.
+
+**ترقيةُ مدير** — في التطوير على جهازك:
+
+```bash
+node scripts/make-admin.mjs <username>
+```
+
+وعلى الخادم (السكربت داخل الصورة، و`DB_PATH` مضبوطٌ فيها):
+
+```bash
+docker exec dokits node scripts/make-admin.mjs <username>
+```
+
+الترقيةُ تسري فوراً بلا إعادة دخول — الدورُ يُقرأ من القاعدة مع كلّ طلب.
 
 ## الهويّة والرموز
 
