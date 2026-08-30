@@ -11,9 +11,15 @@
 
 export type HijriCalendar = "islamic-umalqura" | "islamic-civil";
 
-export const CALENDARS: { id: HijriCalendar; nameAr: string; noteAr: string }[] = [
-  { id: "islamic-umalqura", nameAr: "أمّ القرى", noteAr: "المعتمَد رسميّاً في السعوديّة وأكثرِ الأنظمة" },
-  { id: "islamic-civil", nameAr: "الحسابيّ المدنيّ", noteAr: "جدوليٌّ ثابت — قد يفارق أمّ القرى يوماً" },
+export const CALENDARS: { id: HijriCalendar; nameAr: string; noteAr: string; nameEn: string; noteEn: string }[] = [
+  {
+    id: "islamic-umalqura", nameAr: "أمّ القرى", noteAr: "المعتمَد رسميّاً في السعوديّة وأكثرِ الأنظمة",
+    nameEn: "Umm al-Qura", noteEn: "The official calendar in Saudi Arabia and most systems",
+  },
+  {
+    id: "islamic-civil", nameAr: "الحسابيّ المدنيّ", noteAr: "جدوليٌّ ثابت — قد يفارق أمّ القرى يوماً",
+    nameEn: "Tabular civil", noteEn: "A fixed arithmetic table — it can differ from Umm al-Qura by a day",
+  },
 ];
 
 export const HIJRI_MONTHS = [

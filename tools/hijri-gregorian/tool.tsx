@@ -7,10 +7,41 @@ import {
   gregorianMonthLength, hijriMonthLength, toGregorian, toHijri, todayUtc,
   type HijriCalendar,
 } from "@/tools/hijri-gregorian/convert";
+import { useLang, useStrings } from "@/components/lang";
+import { GREGORIAN_MONTH_EN, HIJRI_MONTH_EN } from "@/tools/names-en";
 
 type Direction = "g2h" | "h2g";
 
+const S = {
+  ar: {
+    outOfRange: (a: number, b: number) => `السنةُ خارج المدى المدعوم — من ${a} إلى ${b}.`,
+    noSuchDate: "هذا التاريخ غير موجودٍ في التقويم — الشهرُ ٢٩ يوماً.",
+    toG: "الموافق ميلاديّاً", toH: "الموافق هجريّاً",
+    conv: "التحويل", dirLabel: "اتّجاه التحويل",
+    g2h: "من ميلاديّ إلى هجريّ", h2g: "من هجريّ إلى ميلاديّ",
+    day: "اليوم", month: "الشهر", year: (h: boolean): string => `السنة ${h ? "هـ" : "م"}`,
+    today: "اليوم", calendar: "التقويم الهجريّ", calLabel: "اختيار التقويم الهجريّ",
+    copy: "نسخ", copied: "نُسخ ✓",
+    b: "حسابيٌّ لا رَصْديّ",
+    n1: "التقويمُ الهجريُّ هنا ", n2: " — وقد يفارق رؤيةَ الهلال المحلّيّة يوماً. للمعاملات الرسميّة اعتمد ما يعلنه بلدُك.",
+  },
+  en: {
+    outOfRange: (a: number, b: number) => `That year is outside the supported range — ${a} to ${b}.`,
+    noSuchDate: "That date does not exist in this calendar — the month has 29 days.",
+    toG: "In the Gregorian calendar", toH: "In the Hijri calendar",
+    conv: "Conversion", dirLabel: "Conversion direction",
+    g2h: "Gregorian → Hijri", h2g: "Hijri → Gregorian",
+    day: "Day", month: "Month", year: (h: boolean): string => `Year ${h ? "AH" : "CE"}`,
+    today: "Today", calendar: "Hijri calendar", calLabel: "Choose the Hijri calendar",
+    copy: "Copy", copied: "Copied ✓",
+    b: "calculated, not sighted",
+    n1: "The Hijri calendar here is ", n2: " — it may differ by a day from a local moon sighting. For official matters follow your country's announcement.",
+  },
+};
+
 export default function HijriGregorian() {
+  const s = useStrings(S);
+  const isEn = useLang() === "en";
   const [dir, setDir] = useState<Direction>("g2h");
   const [cal, setCal] = useState<HijriCalendar>("islamic-umalqura");
   const [d, setD] = useState(1);
@@ -28,9 +59,11 @@ export default function HijriGregorian() {
     setY(t.getUTCFullYear());
   }, []);
 
-  const months = fromHijri
-    ? HIJRI_MONTHS
-    : GREG_MONTHS_AR.map((n, i) => `${n} · ${GREG_MONTHS_ALT[i]}`);
+  const months = isEn
+    ? (fromHijri ? HIJRI_MONTH_EN : GREGORIAN_MONTH_EN)
+    : fromHijri
+      ? HIJRI_MONTHS
+      : GREG_MONTHS_AR.map((n, i) => `${n} · ${GREG_MONTHS_ALT[i]}`);
 
   const minYear = fromHijri ? HIJRI_MIN_YEAR : GREG_MIN_YEAR;
   const maxYear = fromHijri ? HIJRI_MAX_YEAR : GREG_MAX_YEAR;
@@ -76,17 +109,17 @@ export default function HijriGregorian() {
 
   const result = useMemo(() => {
     if (!yearOk) {
-      return { error: `السنةُ خارج المدى المدعوم — من ${minYear} إلى ${maxYear}.` };
+      return { error: s.outOfRange(minYear, maxYear) };
     }
     if (fromHijri) {
       const g = toGregorian({ y, m, d }, cal);
-      if (!g) return { error: "هذا التاريخ غير موجودٍ في التقويم — الشهرُ ٢٩ يوماً." };
-      return { out: formatGregorian(g), label: "الموافق ميلاديّاً" };
+      if (!g) return { error: s.noSuchDate };
+      return { out: formatGregorian(g), label: s.toG };
     }
     const date = new Date(Date.UTC(y, m - 1, d));
     const h = toHijri(date, cal);
-    return { out: formatHijri(h, date), label: "الموافق هجريّاً" };
-  }, [fromHijri, y, m, d, cal, yearOk, minYear, maxYear]);
+    return { out: formatHijri(h, date), label: s.toH };
+  }, [fromHijri, y, m, d, cal, yearOk, minYear, maxYear, s]);
 
   const copy = async () => {
     if (!("out" in result) || !result.out) return;
@@ -100,20 +133,20 @@ export default function HijriGregorian() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <span className="label">التحويل</span>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="اتّجاه التحويل">
+        <span className="label">{s.conv}</span>
+        <div className="flex flex-wrap gap-2" role="group" aria-label={s.dirLabel}>
           <button className={`chip ${!fromHijri ? "chip-active" : ""}`} onClick={() => !fromHijri || flip()}>
-            من ميلاديّ إلى هجريّ
+            {s.g2h}
           </button>
           <button className={`chip ${fromHijri ? "chip-active" : ""}`} onClick={() => fromHijri || flip()}>
-            من هجريّ إلى ميلاديّ
+            {s.h2g}
           </button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-24 flex-1">
-          <label className="label" htmlFor="hg-day">اليوم</label>
+          <label className="label" htmlFor="hg-day">{s.day}</label>
           <select id="hg-day" className="field" value={d} onChange={(e) => setD(Number(e.target.value))}>
             {Array.from({ length: maxDay }, (_, i) => i + 1).map((n) => (
               <option key={n} value={n}>{n}</option>
@@ -121,7 +154,7 @@ export default function HijriGregorian() {
           </select>
         </div>
         <div className="min-w-44 flex-[2]">
-          <label className="label" htmlFor="hg-month">الشهر</label>
+          <label className="label" htmlFor="hg-month">{s.month}</label>
           <select id="hg-month" className="field" value={m} onChange={(e) => setM(Number(e.target.value))}>
             {months.map((name, i) => (
               <option key={name} value={i + 1}>{name}</option>
@@ -129,7 +162,7 @@ export default function HijriGregorian() {
           </select>
         </div>
         <div className="min-w-28 flex-1">
-          <label className="label" htmlFor="hg-year">السنة {fromHijri ? "هـ" : "م"}</label>
+          <label className="label" htmlFor="hg-year">{s.year(fromHijri)}</label>
           <input
             id="hg-year" type="number" inputMode="numeric" dir="ltr"
             className="field font-mono tabular-nums"
@@ -137,25 +170,25 @@ export default function HijriGregorian() {
             onChange={(e) => setY(Number(e.target.value))}
           />
         </div>
-        <button className="btn btn-ghost" onClick={today}>اليوم</button>
+        <button className="btn btn-ghost" onClick={today}>{s.today}</button>
       </div>
 
       <div>
-        <span className="label">التقويم الهجريّ</span>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="اختيار التقويم الهجريّ">
+        <span className="label">{s.calendar}</span>
+        <div className="flex flex-wrap gap-2" role="group" aria-label={s.calLabel}>
           {CALENDARS.map((c) => (
             <button
               key={c.id}
               className={`chip ${cal === c.id ? "chip-active" : ""}`}
               onClick={() => setCal(c.id)}
-              title={c.noteAr}
+              title={isEn ? c.noteEn : c.noteAr}
             >
-              {c.nameAr}
+              {isEn ? c.nameEn : c.nameAr}
             </button>
           ))}
         </div>
         <p className="mt-1.5 text-[0.82rem] text-muted">
-          {CALENDARS.find((c) => c.id === cal)?.noteAr}
+          {isEn ? CALENDARS.find((c) => c.id === cal)?.noteEn : CALENDARS.find((c) => c.id === cal)?.noteAr}
         </p>
       </div>
 
@@ -166,19 +199,18 @@ export default function HijriGregorian() {
           <div className="mb-2 flex items-center gap-3">
             <span className="text-[0.78rem] font-bold tracking-wide text-primary">{result.label}</span>
             <button className="btn btn-ghost ms-auto !px-3 !py-1 !text-[0.82rem]" onClick={copy}>
-              {copied ? "نُسخ ✓" : "نسخ"}
+              {copied ? s.copied : s.copy}
             </button>
           </div>
-          <p className="text-xl leading-loose text-ink">{result.out.prose}</p>
+          <p className="text-xl leading-loose text-ink" dir={isEn ? "ltr" : "rtl"}>{isEn ? result.out.en : result.out.prose}</p>
           <p dir="ltr" className="mt-1 font-mono text-[0.9rem] tabular-nums text-muted">
-            {result.out.numeric} · {result.out.en}
+            {result.out.numeric}{isEn ? "" : ` · ${result.out.en}`}
           </p>
         </div>
       ) : null}
 
       <p className="text-[0.84rem] leading-relaxed text-muted">
-        التقويمُ الهجريُّ هنا <b className="font-semibold text-ink">حسابيٌّ لا رَصْديّ</b> — وقد يفارق
-        رؤيةَ الهلال المحلّيّة يوماً. للمعاملات الرسميّة اعتمد ما يعلنه بلدُك.
+        {s.n1}<b className="font-semibold text-ink">{s.b}</b>{s.n2}
       </p>
     </div>
   );

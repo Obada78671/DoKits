@@ -3,11 +3,30 @@
 import { useMemo, useState } from "react";
 import { ChipGroup, Field, Note, TextArea, Tiles, ToolLayout } from "@/components/tool-kit";
 import { WEEKENDS, businessDays, parseDate, type WeekendId } from "@/tools/convert-lib";
+import { useStrings } from "@/components/lang";
 
 const nf = new Intl.NumberFormat("en-US");
 const today = () => new Date().toISOString().slice(0, 10);
 
+const S = {
+  ar: {
+    from: "من", to: "إلى", weekend: "عطلةُ نهاية الأسبوع",
+    holidays: "عطلٌ رسميّة (اختياريّ)",
+    holHint: "تاريخٌ في كلّ سطر بصيغة 2026-09-23 — تُطرح إن لم تصادف نهاية الأسبوع.",
+    working: "أيّامُ عمل", total: "الأيّامُ كلُّها", we: "نهاياتُ أسبوع", off: "عطلٌ مطروحة",
+    note: "الطرفان محسوبان ضمن المدّة. والعطلةُ التي تصادف نهايةَ الأسبوع لا تُطرح مرّتين.",
+  },
+  en: {
+    from: "From", to: "To", weekend: "Weekend",
+    holidays: "Public holidays (optional)",
+    holHint: "One date per line as 2026-09-23 — subtracted unless it already falls on a weekend.",
+    working: "Working days", total: "All days", we: "Weekend days", off: "Holidays subtracted",
+    note: "Both endpoints are included. A holiday that falls on a weekend is not subtracted twice.",
+  },
+};
+
 export default function BusinessDays() {
+  const s = useStrings(S);
   const [a, setA] = useState(today());
   const [b, setB] = useState(today());
   const [weekend, setWeekend] = useState<WeekendId>("fri-sat");
@@ -27,39 +46,39 @@ export default function BusinessDays() {
   return (
     <ToolLayout>
       <div className="flex flex-wrap gap-3">
-        <Field label="من" htmlFor="bd-a" className="min-w-40 flex-1">
+        <Field label={s.from} htmlFor="bd-a" className="min-w-40 flex-1">
           <input id="bd-a" type="date" dir="ltr" className="field font-mono" value={a} onChange={(e) => setA(e.target.value)} />
         </Field>
-        <Field label="إلى" htmlFor="bd-b" className="min-w-40 flex-1">
+        <Field label={s.to} htmlFor="bd-b" className="min-w-40 flex-1">
           <input id="bd-b" type="date" dir="ltr" className="field font-mono" value={b} onChange={(e) => setB(e.target.value)} />
         </Field>
       </div>
 
       <ChipGroup
-        label="عطلةُ نهاية الأسبوع"
+        label={s.weekend}
         value={weekend}
         onChange={setWeekend}
         options={WEEKENDS.map((w) => ({ id: w.id, label: w.name }))}
       />
 
       <Field
-        label="عطلٌ رسميّة (اختياريّ)"
+        label={s.holidays}
         htmlFor="bd-h"
-        hint="تاريخٌ في كلّ سطر بصيغة 2026-09-23 — تُطرح إن لم تصادف نهاية الأسبوع."
+        hint={s.holHint}
       >
         <TextArea id="bd-h" value={holidays} onChange={setHolidays} rows={3} dir="ltr" placeholder={"2026-09-23\n2027-01-01"} />
       </Field>
 
       <Tiles
         items={[
-          { label: "أيّامُ عمل", value: res ? nf.format(res.working) : "—", lit: true },
-          { label: "الأيّامُ كلُّها", value: res ? nf.format(res.total) : "—" },
-          { label: "نهاياتُ أسبوع", value: res ? nf.format(res.weekend) : "—" },
-          { label: "عطلٌ مطروحة", value: res ? nf.format(res.holidays) : "—" },
+          { label: s.working, value: res ? nf.format(res.working) : "—", lit: true },
+          { label: s.total, value: res ? nf.format(res.total) : "—" },
+          { label: s.we, value: res ? nf.format(res.weekend) : "—" },
+          { label: s.off, value: res ? nf.format(res.holidays) : "—" },
         ]}
       />
 
-      <Note>الطرفان محسوبان ضمن المدّة. والعطلةُ التي تصادف نهايةَ الأسبوع لا تُطرح مرّتين.</Note>
+      <Note>{s.note}</Note>
     </ToolLayout>
   );
 }

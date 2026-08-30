@@ -83,6 +83,18 @@ const MIGRATIONS: string[] = [
     searches  INTEGER NOT NULL DEFAULT 0
   );
   `,
+  `
+  /* استعادةُ الحساب برموزٍ مجزّأة — لا بريدَ في هذا الخادم، والرمزُ يُخزَّن
+     كما تُخزَّن كلمةُ المرور فلا يعطي تسريبُ القاعدة مفتاحاً جاهزاً. */
+  CREATE TABLE recovery_codes (
+    id        INTEGER PRIMARY KEY,
+    user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    used_at   INTEGER
+  );
+  CREATE INDEX idx_recovery_user ON recovery_codes(user_id);
+  `,
 ];
 
 function migrate(d: Database.Database) {

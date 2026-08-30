@@ -154,28 +154,31 @@ export const IBAN_LENGTHS: Record<string, number> = {
   BA: 20, ME: 22, MU: 30, VG: 24, GI: 23,
 };
 
+export type IbanError = "empty" | "shape" | "country" | "length" | "checksum";
+
+/** الرمزُ ثابتٌ والرسالةُ عربيّة — والواجهةُ تترجم بالرمز لا بالنصّ */
 export type IbanCheck =
   | { ok: true; formatted: string; country: string; length: number }
-  | { ok: false; reason: string };
+  | { ok: false; code: IbanError; reason: string; country?: string; expected?: number; got?: number };
 
 export function checkIban(raw: string): IbanCheck {
   const s = raw.toUpperCase().replace(/[\s-]/g, "");
-  if (!s) return { ok: false, reason: "" };
+  if (!s) return { ok: false, code: "empty" as const, reason: "" };
   if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(s)) {
-    return { ok: false, reason: "الصيغة: حرفا بلدٍ ثمّ رقما تحقّقٍ ثمّ حروفٌ وأرقام." };
+    return { ok: false, code: "shape" as const, reason: "الصيغة: حرفا بلدٍ ثمّ رقما تحقّقٍ ثمّ حروفٌ وأرقام." };
   }
   const country = s.slice(0, 2);
   const expected = IBAN_LENGTHS[country];
-  if (!expected) return { ok: false, reason: `رمزُ البلد «${country}» ليس في سجلّ الحسابات الدوليّة.` };
+  if (!expected) return { ok: false, code: "country" as const, country, reason: `رمزُ البلد «${country}» ليس في سجلّ الحسابات الدوليّة.` };
   if (s.length !== expected) {
-    return { ok: false, reason: `طولُ ${country} يجب أن يكون ${expected} محرفاً — أدخلتَ ${s.length}.` };
+    return { ok: false, code: "length" as const, country, expected, got: s.length, reason: `طولُ ${country} يجب أن يكون ${expected} محرفاً — أدخلتَ ${s.length}.` };
   }
   // مِعيارُ mod-97: تُنقل الأربعةُ الأولى إلى الآخر، ثمّ تُبدَّل الحروفُ أرقاماً
   const moved = s.slice(4) + s.slice(0, 4);
   const digits = [...moved].map((c) => (/\d/.test(c) ? c : String(c.charCodeAt(0) - 55))).join("");
   let rem = 0;
   for (const d of digits) rem = (rem * 10 + Number(d)) % 97;
-  if (rem !== 1) return { ok: false, reason: "رقما التحقّق لا يطابقان — راجع الرقم، فيه خطأٌ أو حرفٌ ناقص." };
+  if (rem !== 1) return { ok: false, code: "checksum" as const, reason: "رقما التحقّق لا يطابقان — راجع الرقم، فيه خطأٌ أو حرفٌ ناقص." };
   return { ok: true, formatted: s.replace(/(.{4})/g, "$1 ").trim(), country, length: s.length };
 }
 

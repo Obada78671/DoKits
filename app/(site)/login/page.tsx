@@ -15,6 +15,9 @@ export default async function LoginPage() {
         <LoginForm />
       </div>
       <p className="mt-4 text-center text-[0.9rem] text-muted">
+        <Link href="/recover" className="font-medium text-primary">نسيتُ كلمة المرور</Link>
+      </p>
+      <p className="mt-2 text-center text-[0.9rem] text-muted">
         ما عندك حساب؟ <Link href="/register" className="font-medium text-primary">أنشئه في دقيقة</Link>
       </p>
     </div>

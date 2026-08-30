@@ -8,6 +8,7 @@ import {
   hashPassword, verifyPassword,
 } from "@/lib/auth";
 import { clientKey, take } from "@/lib/rate-limit";
+import { consumeCode, countCodes, issueCodes } from "@/lib/recovery";
 import { CATEGORIES } from "@/tools/categories";
 
 export type FormState = { error?: string; ok?: string };
@@ -217,4 +218,53 @@ export async function moveCategoryAction(id: number, dir: number) {
   d.transaction(() => all.forEach((c, i) => upd.run(i + 1, c.id)))();
   revalidatePath("/admin/categories");
   revalidatePath("/");
+}
+
+/* ————— استعادةُ الحساب ————— */
+
+export async function issueRecoveryCodesAction(): Promise<{ codes?: string[]; error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: "سجّل الدخولَ أوّلاً." };
+  if (!take(`recovery:issue:${user.id}`, 5, 60 * 60 * 1000)) {
+    return { error: "طلباتٌ كثيرة — انتظر ساعةً ثمّ أعد المحاولة." };
+  }
+  return { codes: await issueCodes(user.id) };
+}
+
+export async function recoveryCodeCount(): Promise<number> {
+  const user = await getUser();
+  return user ? countCodes(user.id) : 0;
+}
+
+/**
+ * الاستعادةُ بالرمز — أضيقُ من الدخول في حدّ المعدّل لأنّها آخرُ بابٍ للحساب.
+ *
+ * وثلاثةُ أشياءَ تجري معاً عند النجاح: يُستهلك الرمز، وتُبدَّل كلمةُ المرور،
+ * و**تُنهى كلُّ الجلسات**. فمن نسي كلمتَه قد يكون فقد جهازاً أو سُرق منه —
+ * وترْكُ جلسةٍ قديمةٍ حيّةً بعد الاستعادة يُبقي البابَ الذي جاء منه المهاجم.
+ */
+export async function recoverAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const identifier = String(form.get("identifier") ?? "").trim();
+  const code = String(form.get("code") ?? "");
+  const password = String(form.get("password") ?? "");
+  if (!identifier || !code || !password) return { error: "أكمل الحقولَ الثلاثة." };
+  if (password.length < 8) return { error: "كلمةُ المرور الجديدة ثمانيةُ محارفَ فأكثر." };
+
+  const ipOk = take(`recover:ip:${await clientKey()}`, 8, 60 * 60 * 1000);
+  const idOk = take(`recover:id:${identifier.toLowerCase()}`, 5, 60 * 60 * 1000);
+  if (!ipOk || !idOk) return { error: "محاولات كثيرة — انتظر ساعةً ثمّ أعد المحاولة." };
+
+  const user = db()
+    .prepare("SELECT id FROM users WHERE username = ? OR email = ?")
+    .get(identifier, identifier.toLowerCase()) as { id: number } | undefined;
+
+  // رسالةٌ واحدةٌ للحالتين: لا نكشف أيُّ المعرّفات موجودٌ في القاعدة
+  const ok = user ? await consumeCode(user.id, code) : false;
+  if (!user || !ok) return { error: "المعرّفُ أو رمزُ الاستعادة غير صحيح." };
+
+  const hash = await hashPassword(password);
+  db().prepare("UPDATE users SET password_hash = ?, updated_at = unixepoch() WHERE id = ?").run(hash, user.id);
+  destroyAllSessions(user.id);
+  await createSession(user.id);
+  redirect("/account?recovered=1");
 }
