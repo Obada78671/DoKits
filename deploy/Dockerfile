@@ -3,6 +3,9 @@ FROM node:22-slim AS build
 WORKDIR /app
 # سقف V8 أثناء البناء — مع سقف docker build الخارجيّ (المادّة ٨ل، دفاع مزدوج)
 ENV NODE_OPTIONS="--max-old-space-size=2048"
+# عدّة بناء الوحدات الأصليّة (better-sqlite3) — في مرحلة البناء فقط
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
