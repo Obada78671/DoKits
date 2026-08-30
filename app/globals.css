@@ -129,4 +129,23 @@
   .form-ok {
     @apply rounded-s border border-primary/40 bg-primary-soft px-3.5 py-2 text-[0.9rem] text-ink;
   }
+
+  /* معاينةُ Markdown — المحتوى مهرَّبٌ في المنطق قبل وصوله هنا */
+  .md-preview :is(h1, h2, h3, h4, h5, h6) {
+    @apply mt-4 mb-2 font-bold first:mt-0;
+  }
+  .md-preview h1 { @apply text-2xl; }
+  .md-preview h2 { @apply text-xl; }
+  .md-preview h3 { @apply text-lg; }
+  .md-preview p { @apply my-2 leading-loose; }
+  .md-preview :is(ul, ol) { @apply my-2 ps-6; }
+  .md-preview ul { @apply list-disc; }
+  .md-preview ol { @apply list-decimal; }
+  .md-preview li { @apply my-1; }
+  .md-preview a { @apply text-primary underline; }
+  .md-preview code { @apply rounded bg-surface2 px-1.5 py-0.5 font-mono text-[0.9em]; }
+  .md-preview pre { @apply my-3 overflow-x-auto rounded-s bg-surface2 p-3.5; }
+  .md-preview pre code { @apply bg-transparent p-0; }
+  .md-preview blockquote { @apply my-3 border-s-4 border-primary ps-4 text-muted; }
+  .md-preview hr { @apply my-5 border-line; }
 }

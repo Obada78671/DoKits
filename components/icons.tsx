@@ -46,6 +46,42 @@ const MAP: Record<string, (p: P) => React.ReactElement> = {
   design: (p) => (
     <svg {...base(p.size, p)}><path d="m13 3 8 8-9.5 9.5H3v-8.5z" /><path d="m10.5 6.5 7 7" /></svg>
   ),
+  eraser: (p) => (
+    <svg {...base(p.size, p)}><path d="m5 15 7-7 6 6-5 5H8zM4 21h16" /></svg>
+  ),
+  digits: (p) => (
+    <svg {...base(p.size, p)}><path d="M6 8h2v9M14 8h3a2 2 0 0 1 0 4h-1a2 2 0 0 0 0 4h3" /></svg>
+  ),
+  keyboard: (p) => (
+    <svg {...base(p.size, p)}><rect x="2" y="6" width="20" height="12" rx="3" /><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" /></svg>
+  ),
+  broom: (p) => (
+    <svg {...base(p.size, p)}><path d="M15 4 9 10M7 12l5 5-4 4H4v-4zM13 6l5 5" /></svg>
+  ),
+  swap: (p) => (
+    <svg {...base(p.size, p)}><path d="M4 8h13l-3-3M20 16H7l3 3" /></svg>
+  ),
+  sort: (p) => (
+    <svg {...base(p.size, p)}><path d="M7 4v16l-3-3M17 20V4l3 3" /></svg>
+  ),
+  chart: (p) => (
+    <svg {...base(p.size, p)}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+  ),
+  filter: (p) => (
+    <svg {...base(p.size, p)}><path d="M3 5h18l-7 8v6l-4-2v-4z" /></svg>
+  ),
+  link: (p) => (
+    <svg {...base(p.size, p)}><path d="M10 13a4 4 0 0 0 5.7.3l3-3A4 4 0 0 0 13 4.6l-1.7 1.7M14 11a4 4 0 0 0-5.7-.3l-3 3A4 4 0 0 0 11 19.4l1.7-1.7" /></svg>
+  ),
+  gauge: (p) => (
+    <svg {...base(p.size, p)}><path d="M4 18a8 8 0 1 1 16 0" /><path d="M12 18l4-5" /></svg>
+  ),
+  diff: (p) => (
+    <svg {...base(p.size, p)}><path d="M6 3v13M6 20v1M18 8v13M18 3v1M4 6h4M16 18h4M18 8a5 5 0 0 1-5-5" /></svg>
+  ),
+  markdown: (p) => (
+    <svg {...base(p.size, p)}><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M6 15V9l2.5 3L11 9v6M15 9v6M15 15h3" /></svg>
+  ),
   calendar: (p) => (
     <svg {...base(p.size, p)}>
       <rect x="3" y="5" width="18" height="16" rx="3" />
