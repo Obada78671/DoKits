@@ -18,5 +18,13 @@ export type ToolManifest = {
 };
 
 export const TOOLS: ToolManifest[] = [
-  // تُضاف الأدوات تباعاً — أوّلها الأداة النموذجيّة القادمة مع عقد التطبيع
+  {
+    slug: "word-counter",
+    nameAr: "عدّاد الكلمات العربيّ",
+    descriptionAr: "كلماتٌ وحروفٌ وجملٌ وزمنُ قراءة — يفهم العربيّةَ وتشكيلَها، ولا يغادر النصُّ متصفّحَك.",
+    category: "docs",
+    icon: "counter",
+    version: "1.0.0",
+    load: () => import("@/tools/word-counter/tool"),
+  },
 ];

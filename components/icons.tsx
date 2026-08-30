@@ -46,6 +46,9 @@ const MAP: Record<string, (p: P) => React.ReactElement> = {
   design: (p) => (
     <svg {...base(p.size, p)}><path d="m13 3 8 8-9.5 9.5H3v-8.5z" /><path d="m10.5 6.5 7 7" /></svg>
   ),
+  counter: (p) => (
+    <svg {...base(p.size, p)}><path d="M10 3 8 21M16 3l-2 18M4 9h17M3 15h17" /></svg>
+  ),
   tool: (p) => (
     <svg {...base(p.size, p)}><path d="M14.5 4.5a5 5 0 0 0-6.6 6.2L3 15.6V21h5.4l4.9-4.9a5 5 0 0 0 6.2-6.6l-3.4 3.4-3.5-1-1-3.5z" /></svg>
   ),

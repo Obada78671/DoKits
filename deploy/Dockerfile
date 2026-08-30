@@ -15,7 +15,7 @@ WORKDIR /app
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
-RUN mkdir -p /data && chown node:node /data
+RUN mkdir -p /data .next/cache && chown -R node:node /data .next/cache
 VOLUME /data
 USER node
 EXPOSE 3000
