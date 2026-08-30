@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Do Kits 🧰
 
-## Getting Started
+**حقيبةُ أدواتِ عملٍ عربيّة — أدواتٌ متفرّقة، هويّةٌ واحدة.** تعمل على dokits.net من خادم البيت.
 
-First, run the development server:
+- ‏Next.js (App Router) + SQLite (better-sqlite3) — حاويةٌ واحدةٌ خفيفة، لا خدمات خارجيّة.
+- مصادقةٌ ذاتيّة: argon2id + جلسات مخزّنة ببصمة sha256 + حدّ معدّلٍ في الذاكرة (لا تسجيل IP).
+- ‏RTL أوّلاً، فاتح/داكن، خطوط IBM Plex مستضافة ذاتيّاً.
+
+## التطوير
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3902
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+القاعدة تُنشأ وتُهاجَر وتُبذَر تلقائيّاً في `data/` عند أوّل طلب. ترقية مدير: `node scripts/make-admin.mjs <username>`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## الهويّة والرموز
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+رموز التصميم (`--dk-`) في [app/globals.css](app/globals.css) — مصدرها وثيقة الهويّة المعتمدة (artifact «هويّة Do Kits»). القاعدة الذهبيّة: **الكهرمان لما هو فاعلٌ أو مختارٌ فقط**، والبتروليّ للبنية. لا ألوان صلبة في أيّ مكوّن.
 
-## Learn More
+## إضافة أداة
 
-To learn more about Next.js, take a look at the following resources:
+كلّ أداة مجلّد `tools/<slug>/` + بيان تعريف في [tools/index.ts](tools/index.ts). دمجُ أيّ أداةٍ خارجيّةٍ يخضع لعقد التطبيع الجامع — وثيقته قادمة في `docs/normalization-contract.md` مع أوّل أداة نموذجيّة.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## الإصدار
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+رفعٌ تلقائيّ مع كلّ تغييرٍ قابلٍ للشحن:
 
-## Deploy on Vercel
+```bash
+npm run version:patch   # أو version:minor / version:major
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## النشر (خادم البيت)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+bash /mnt/user/personal/projects/dokits/deploy/deploy.sh
+```
+
+يسحب ويبني (بسقف ذاكرة) ويشغّل compose بنمط docker:cli على `127.0.0.1:3900`، ثمّ يفحص `/api/health` بالمحتوى. العامّ حصراً عبر نفق cloudflared. الأسرار في `/mnt/user/appdata/dokits/.env` (تولَّد على الخادم ولا تدخل المستودع).

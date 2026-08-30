@@ -1,0 +1,19 @@
+# تُبنى الصورة قبلها بسقف ذاكرة (deploy.sh) — compose لا يبني (المادّة ٨ل من دستور الخادم)
+services:
+  dokits:
+    image: dokits:local
+    container_name: dokits
+    restart: unless-stopped   # للانهيار أثناء العمل — الإقلاع عبر unraid-autostart (المادّة ٣أ)
+    ports:
+      - "127.0.0.1:3900:3000"   # لا انكشاف على الشبكة — العامّ عبر نفق cloudflared حصراً
+    volumes:
+      - /mnt/user/appdata/dokits/data:/data
+    env_file:
+      - /mnt/user/appdata/dokits/.env
+    mem_limit: 200m
+    memswap_limit: 200m       # المساواة تلغي التبديل — يُقتل داخل حدّه ولا يخنق المضيف
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

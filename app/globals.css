@@ -1,26 +1,132 @@
+@import "./fonts.css";
 @import "tailwindcss";
 
+/* ————— رموز تصميم Do Kits (--dk-) — مصدرها وثيقة الهويّة المعتمدة ————— */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --dk-bg: #f3f6f5;
+  --dk-surface: #ffffff;
+  --dk-surface-2: #e9efed;
+  --dk-ink: #12292d;
+  --dk-muted: #52696c;
+  --dk-border: #dce4e1;
+  --dk-primary: #0e6e66;
+  --dk-primary-ink: #ffffff;
+  --dk-primary-soft: #ddeeeb;
+  --dk-accent: #e08a0c;
+  --dk-accent-ink: #241502;
+  --dk-accent-soft: #fbeed8;
+  --dk-danger: #b3403a;
+  --dk-shadow: 0 1px 2px rgba(18, 41, 45, 0.06), 0 8px 24px -12px rgba(18, 41, 45, 0.14);
+  --dk-font: "IBM Plex Sans Arabic", system-ui, "Segoe UI", Tahoma, sans-serif;
+  --dk-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --dk-bg: #0c1719;
+    --dk-surface: #122225;
+    --dk-surface-2: #182c30;
+    --dk-ink: #e7edea;
+    --dk-muted: #8ca5a3;
+    --dk-border: #23393c;
+    --dk-primary: #37b3a5;
+    --dk-primary-ink: #06201d;
+    --dk-primary-soft: #123b37;
+    --dk-accent: #f2ae3c;
+    --dk-accent-ink: #241502;
+    --dk-accent-soft: #33270f;
+    --dk-danger: #e0736c;
+    --dk-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+:root[data-theme="dark"] {
+  --dk-bg: #0c1719;
+  --dk-surface: #122225;
+  --dk-surface-2: #182c30;
+  --dk-ink: #e7edea;
+  --dk-muted: #8ca5a3;
+  --dk-border: #23393c;
+  --dk-primary: #37b3a5;
+  --dk-primary-ink: #06201d;
+  --dk-primary-soft: #123b37;
+  --dk-accent: #f2ae3c;
+  --dk-accent-ink: #241502;
+  --dk-accent-soft: #33270f;
+  --dk-danger: #e0736c;
+  --dk-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-page: var(--dk-bg);
+  --color-surface: var(--dk-surface);
+  --color-surface2: var(--dk-surface-2);
+  --color-ink: var(--dk-ink);
+  --color-muted: var(--dk-muted);
+  --color-line: var(--dk-border);
+  --color-primary: var(--dk-primary);
+  --color-primary-ink: var(--dk-primary-ink);
+  --color-primary-soft: var(--dk-primary-soft);
+  --color-accent: var(--dk-accent);
+  --color-accent-ink: var(--dk-accent-ink);
+  --color-accent-soft: var(--dk-accent-soft);
+  --color-danger: var(--dk-danger);
+  --font-sans: var(--dk-font);
+  --font-mono: var(--dk-mono);
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 22px;
+  --shadow-card: var(--dk-shadow);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-page text-ink font-sans;
+    line-height: 1.8;
+  }
+  :focus-visible {
+    outline: 3px solid var(--dk-primary);
+    outline-offset: 2px;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+    line-height: 1.35;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-s border border-transparent px-4.5 py-2 text-[0.95rem] font-medium transition-colors;
+  }
+  .btn-primary {
+    @apply bg-primary text-primary-ink hover:opacity-90;
+  }
+  .btn-accent {
+    @apply bg-accent text-accent-ink hover:opacity-90;
+  }
+  .btn-ghost {
+    @apply border-line text-ink hover:bg-surface2;
+  }
+  .btn-danger {
+    @apply bg-danger text-white hover:opacity-90;
+  }
+  .field {
+    @apply w-full rounded-s border border-line bg-surface px-3.5 py-2 text-ink placeholder:text-muted;
+  }
+  .card {
+    @apply rounded-m border border-line bg-surface shadow-card;
+  }
+  .chip {
+    @apply inline-flex cursor-pointer items-center rounded-full border border-line bg-surface px-3.5 py-1 text-[0.86rem] font-medium text-ink transition-colors hover:bg-surface2;
+  }
+  .chip-active {
+    @apply border-accent bg-accent-soft;
+  }
+  .label {
+    @apply mb-1 block text-[0.85rem] font-medium text-muted;
+  }
+  .form-error {
+    @apply rounded-s border border-danger/40 bg-danger/10 px-3.5 py-2 text-[0.9rem] text-danger;
+  }
+  .form-ok {
+    @apply rounded-s border border-primary/40 bg-primary-soft px-3.5 py-2 text-[0.9rem] text-ink;
+  }
 }
